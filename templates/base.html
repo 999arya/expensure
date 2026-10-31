@@ -3,8 +3,10 @@
 <html lang="en-in">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#14171a" media="(prefers-color-scheme: dark)">
   <title>{% block title %}Finance{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
@@ -18,9 +20,9 @@
 
   <nav class="tabbar" aria-label="Primary">
     <a href="{% url 'core:dashboard' %}" aria-current="page">Overview</a>
-    <span class="is-disabled">Transactions</span>
-    <span class="is-disabled">Goals</span>
-    <span class="is-disabled">Reports</span>
+    <span>Activity</span>
+    <span>Goals</span>
+    <span>Reports</span>
   </nav>
 
   <main id="main" class="container">
@@ -30,5 +32,7 @@
   <footer class="site-footer">
     <p>Balances are estimates. They are built from your last confirmed balance and the transactions recorded since then, not from a live bank connection.</p>
   </footer>
+
+  {% block scripts %}{% endblock %}
 </body>
 </html>

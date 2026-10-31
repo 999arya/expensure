@@ -1,5 +1,10 @@
+/* =========================================================
+   Tokens
+   ========================================================= */
+
 :root {
   color-scheme: light dark;
+
   --bg: #f6f6f4;
   --surface: #ffffff;
   --text: #16181a;
@@ -7,8 +12,24 @@
   --line: #dcdedb;
   --accent: #146356;
   --accent-soft: #e3f0ec;
+  --warn-bg: #fff3cd;
+  --warn-text: #7a4b00;
+
+  --radius-sm: 10px;
   --radius: 14px;
-  --space: 1rem;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  --page-x: clamp(1rem, 4vw, 2rem);
+  --nav-height: 3.75rem;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur: 180ms;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -20,8 +41,14 @@
     --line: #2c3237;
     --accent: #6fd3bb;
     --accent-soft: #17322c;
+    --warn-bg: #3a2c10;
+    --warn-text: #ffd479;
   }
 }
+
+/* =========================================================
+   Reset
+   ========================================================= */
 
 *,
 *::before,
@@ -31,10 +58,12 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  scroll-padding-bottom: calc(var(--nav-height) + var(--space-4));
 }
 
 body {
   margin: 0;
+  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + var(--space-4));
   background: var(--bg);
   color: var(--text);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -44,8 +73,17 @@ body {
 h1,
 h2,
 h3 {
+  margin: 0 0 var(--space-2);
   line-height: 1.2;
-  margin: 0 0 0.5rem;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: clamp(1.5rem, 5vw, 2rem);
+}
+
+p {
+  margin: 0 0 var(--space-3);
 }
 
 a {
@@ -57,27 +95,33 @@ a {
   outline-offset: 2px;
 }
 
+/* =========================================================
+   Chrome: skip link, header, nav, footer
+   ========================================================= */
+
 .skip-link {
   position: absolute;
   left: -999px;
   top: 0;
+  z-index: 30;
+  padding: var(--space-3) var(--space-4);
   background: var(--surface);
-  padding: 0.75rem 1rem;
-  z-index: 10;
+  color: var(--text);
 }
 
 .skip-link:focus {
-  left: 0.5rem;
-  top: 0.5rem;
+  left: var(--space-2);
+  top: var(--space-2);
 }
 
 .site-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.75rem;
-  padding: 1rem var(--space);
-  border-bottom: 1px solid var(--line);
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-4) var(--page-x);
   background: var(--surface);
+  border-bottom: 1px solid var(--line);
 }
 
 .brand {
@@ -91,22 +135,33 @@ a {
   font-size: 0.85rem;
 }
 
+/* Bottom bar on phones, normal bar on wide screens. Same markup. */
 .tabbar {
-  display: flex;
-  gap: 0.25rem;
-  padding: 0.5rem var(--space);
-  border-bottom: 1px solid var(--line);
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom));
   background: var(--surface);
+  border-top: 1px solid var(--line);
 }
 
 .tabbar a,
 .tabbar span {
-  flex: 1;
-  padding: 0.6rem 0.25rem;
-  border-radius: 10px;
-  font-size: 0.9rem;
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
   text-align: center;
   text-decoration: none;
+}
+
+.tabbar span {
+  color: var(--muted);
 }
 
 .tabbar a[aria-current="page"] {
@@ -115,37 +170,76 @@ a {
   font-weight: 600;
 }
 
-.tabbar .is-disabled {
+.site-footer {
+  padding: 0 var(--page-x) var(--space-6);
   color: var(--muted);
+  font-size: 0.8rem;
+  text-align: center;
 }
+
+.site-footer p {
+  margin: 0 auto;
+  max-width: 34rem;
+}
+
+/* =========================================================
+   Layout
+   ========================================================= */
 
 .container {
-  max-width: 60rem;
+  width: 100%;
+  max-width: 64rem;
   margin: 0 auto;
-  padding: 1.25rem var(--space) 2rem;
+  padding: var(--space-5) var(--page-x) var(--space-4);
 }
 
+.section {
+  margin-top: var(--space-6);
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.section-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+/* =========================================================
+   Components
+   ========================================================= */
+
 .card {
+  padding: var(--space-4);
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 1rem;
 }
 
 .muted {
   color: var(--muted);
 }
 
+.small {
+  font-size: 0.85rem;
+}
+
 .amount {
-  margin: 0.25rem 0 0.75rem;
-  font-size: 1.4rem;
-  font-weight: 650;
+  margin: var(--space-1) 0 var(--space-3);
+  font-size: clamp(1.35rem, 4vw, 1.6rem);
   font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  letter-spacing: -0.01em;
 }
 
 .meta {
   display: grid;
-  gap: 0.25rem;
+  gap: var(--space-1);
   margin: 0;
   font-size: 0.85rem;
 }
@@ -153,7 +247,7 @@ a {
 .meta div {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .meta dt {
@@ -162,58 +256,17 @@ a {
 
 .meta dd {
   margin: 0;
+  text-align: right;
 }
 
-.site-footer {
-  padding: 0 1rem 2rem;
-  color: var(--muted);
-  font-size: 0.8rem;
-  text-align: center;
-}
-
-/* Step 3: structure only. The real responsive layout is step 4. */
-
-.small {
-  font-size: 0.85rem;
-}
-
-.section {
-  margin-top: 2rem;
-}
-
-.section-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.75rem;
-}
-
-.section-head h2 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-.empty {
-  padding: 1.5rem 1rem;
-  border: 1px dashed var(--line);
-  border-radius: var(--radius);
-  color: var(--muted);
-  text-align: center;
-}
+/* Accounts */
 
 .account-grid {
   display: grid;
-  gap: 0.75rem;
+  gap: var(--space-3);
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-@media (min-width: 640px) {
-  .account-grid {
-    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-  }
 }
 
 .account-card h3 {
@@ -222,12 +275,14 @@ a {
 }
 
 .account-card__head {
-  margin-bottom: 0.25rem;
+  margin-bottom: var(--space-1);
 }
+
+/* Transactions */
 
 .txn-list {
   display: grid;
-  gap: 0.5rem;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -237,8 +292,8 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 0.85rem 1rem;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -248,11 +303,17 @@ a {
   margin: 0;
 }
 
+.txn__main {
+  min-width: 0;
+}
+
 .txn__desc {
+  overflow-wrap: anywhere;
   font-weight: 550;
 }
 
 .txn__side {
+  flex: none;
   text-align: right;
 }
 
@@ -268,47 +329,127 @@ a {
 
 .chip {
   display: inline-block;
-  margin-top: 0.2rem;
+  margin-top: var(--space-1);
   padding: 0.1rem 0.5rem;
   border-radius: 999px;
   font-size: 0.75rem;
 }
 
 .chip--warn {
-  background: #fff3cd;
-  color: #7a4b00;
-}
-
-@media (prefers-color-scheme: dark) {
-  .chip--warn {
-    background: #3a2c10;
-    color: #ffd479;
-  }
+  background: var(--warn-bg);
+  color: var(--warn-text);
 }
 
 .notice {
-  margin: 1rem 0 0;
-  padding: 0.75rem 1rem;
+  margin: var(--space-4) 0 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
   border-left: 4px solid #b7791f;
   border-radius: 8px;
-  background: var(--surface);
   font-size: 0.9rem;
 }
 
+.notice p {
+  margin: 0;
+}
+
+/* Progress */
+
 .progress {
+  display: block;
   width: 100%;
-  height: 0.75rem;
-  accent-color: var(--accent);
+  height: 0.6rem;
+  margin: var(--space-2) 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--line);
+  appearance: none;
+  overflow: hidden;
+}
+
+.progress::-webkit-progress-bar {
+  background: var(--line);
+  border-radius: 999px;
+}
+
+.progress::-webkit-progress-value {
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+.progress::-moz-progress-bar {
+  background: var(--accent);
+  border-radius: 999px;
 }
 
 .goal-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .goal-head h3 {
   margin: 0;
   font-size: 1rem;
+}
+
+.empty {
+  padding: var(--space-5) var(--space-4);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  color: var(--muted);
+  text-align: center;
+}
+
+/* =========================================================
+   Wider screens
+   ========================================================= */
+
+@media (min-width: 640px) {
+  .account-grid {
+    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  body {
+    padding-bottom: 0;
+  }
+
+  .tabbar {
+    position: static;
+    display: flex;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--page-x);
+    border-top: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .tabbar a,
+  .tabbar span {
+    min-height: 0;
+    padding: var(--space-2) var(--space-4);
+    font-size: 0.9rem;
+  }
+
+  .container {
+    padding-top: var(--space-6);
+  }
+}
+
+/* =========================================================
+   Motion
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
