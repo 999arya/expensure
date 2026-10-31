@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Overview · Finance{% endblock %}
+
+{% block content %}
+  <h1>Overview</h1>
+  <p class="muted">Balances are estimates from your last confirmed balance plus the transactions recorded since then.</p>
+
+  <section aria-labelledby="accounts-heading">
+    <h2 id="accounts-heading">Accounts</h2>
+
+    <article class="card">
+      <h3>{{ account.nickname }}</h3>
+      <p class="muted">{{ account.bank }} · •••• {{ account.suffix }}</p>
+      <p class="amount">{{ account.balance_display }}</p>
+      <dl class="meta">
+        <div><dt>Last confirmed</dt><dd>{{ account.confirmed_at }}</dd></div>
+        <div><dt>Last captured</dt><dd>{{ account.captured_at }}</dd></div>
+      </dl>
+    </article>
+  </section>
+{% endblock %}
