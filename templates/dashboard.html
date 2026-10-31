@@ -4,20 +4,39 @@
 
 {% block title %}Overview · Finance{% endblock %}
 
-{% block head %}
-  <script>
-    document.documentElement.classList.add("js");
-    window.setTimeout(function () {
-      if (!window.__financeMotion) {
-        document.documentElement.classList.remove("js");
-      }
-    }, 1500);
-  </script>
-{% endblock %}
-
 {% block content %}
-  <h1>Overview</h1>
-  <p class="muted">Balances are estimates from your last confirmed balance plus the transactions recorded since then.</p>
+  <div class="reading-progress" aria-hidden="true"></div>
+  <div class="motion-toolbar"><span><i></i> FINANCE / PERSONAL SPACE</span><button type="button" class="motion-toggle" aria-pressed="false" hidden>Pause motion</button></div>
+  <section class="overview-hero" aria-labelledby="overview-title">
+    <div class="hero-copy">
+      <p class="eyebrow" data-hero>YOUR MONEY, IN PERSPECTIVE <span>01 / OVERVIEW</span></p>
+      <h1 id="overview-title"><span class="headline-mask"><span data-hero-line>Money.</span></span><span class="headline-mask"><span data-hero-line>In your</span></span><span class="headline-mask"><span data-hero-line><em>element.</em></span></span></h1>
+      <p class="hero-description muted" data-hero>Make room for what matters. Your accounts, everyday spending, and next milestone — in one place.</p>
+      <a class="hero-link" href="#accounts-heading" data-hero>Explore your overview <span aria-hidden="true">↘</span></a>
+    </div>
+    <div class="finance-stage">
+      <span class="stage-coordinate" aria-hidden="true">FIG. 01 — FIND YOUR BALANCE</span>
+      <div class="sculpture" aria-hidden="true"><div class="sculpture-ring ring-a"></div><div class="sculpture-ring ring-b"></div><div class="sculpture-ring ring-c"></div><div class="sculpture-core">₹</div></div>
+      <div class="floating-tag tag-top" aria-hidden="true"><span>↗</span> A little more clarity.</div>
+      <div class="floating-tag tag-bottom" aria-hidden="true"><span>◎</span> A lot more possibility.</div>
+      <div class="money-orbit" data-orbit>
+      <svg viewBox="0 0 360 360" aria-hidden="true">
+        <circle class="orbit-guide" cx="180" cy="180" r="166" />
+        <circle class="orbit-guide orbit-guide--inner" cx="180" cy="180" r="113" />
+        <circle class="orbit-track" cx="180" cy="180" r="140" />
+        {% if goal %}<circle class="orbit-value" cx="180" cy="180" r="140" pathLength="100" stroke-dasharray="{{ goal.percent }} 100" data-ring />{% endif %}
+        <g class="orbit-satellite"><circle cx="180" cy="14" r="6" /></g>
+      </svg>
+      <div class="orbit-center">
+        {% if goal %}<span class="eyebrow">ONE STEP CLOSER</span><strong>{{ goal.percent }}<small>%</small></strong><span>{{ goal.name }}</span><span class="small muted">{{ goal.saved_paise|inr }} saved</span>
+        {% else %}<span class="eyebrow">MAKE SPACE FOR</span><strong class="orbit-word">Your<br>future.</strong><span>Small steps. More possibility.</span>{% endif %}
+      </div>
+      <span class="orbit-caption">{% if goal %}YOUR SAVINGS, TAKING SHAPE{% else %}A CLEARER VIEW STARTS HERE{% endif %}</span>
+      </div>
+    </div>
+  </section>
+  <div class="motion-ribbon" aria-hidden="true"><div class="ribbon-track"><span>LESS GUESSWORK <b>✳</b> MORE PERSPECTIVE <b>↗</b> YOUR NEXT CHAPTER <b>✳</b> </span><span>LESS GUESSWORK <b>✳</b> MORE PERSPECTIVE <b>↗</b> YOUR NEXT CHAPTER <b>✳</b> </span></div></div>
+  <div class="overview-caption"><span>THE BIG PICTURE</span><p>Balances are estimates from your last confirmed balance plus the transactions recorded since then.</p><span class="demo-label">FICTIONAL DATA</span></div>
 
   {% if page_state == "error" %}
     <section class="state-panel" role="alert">
@@ -55,7 +74,7 @@
     <section class="section" aria-labelledby="accounts-heading">
       <div class="section-head">
         <h2 id="accounts-heading">Accounts</h2>
-        <span class="muted small">Estimated</span>
+        <span class="muted small">01 — Estimated balances</span>
       </div>
 
       {% if accounts %}
@@ -72,13 +91,14 @@
     <section class="section" aria-labelledby="transactions-heading">
       <div class="section-head">
         <h2 id="transactions-heading">Recent transactions</h2>
-        <span class="muted small">Fictional data</span>
+        <span class="muted small">02 — Money in motion</span>
       </div>
 
       {% if transactions %}
         <ul class="txn-list" role="list">
           {% for txn in transactions %}
             <li class="txn" data-animate="txn">
+              <span class="txn-icon {% if txn.direction == 'credit' %}txn-icon--credit{% endif %}" aria-hidden="true">{% if txn.direction == 'credit' %}↙{% else %}↗{% endif %}</span>
               <div class="txn__main">
                 <p class="txn__desc">{{ txn.description }}</p>
                 <p class="muted small">{{ txn.occurred_at|date:"j M, g:i A" }} · {{ txn.category }}</p>
@@ -134,5 +154,6 @@
 
 {% block scripts %}
   <script src="{% static 'vendor/gsap/gsap.min.js' %}" defer></script>
+  <script src="{% static 'vendor/gsap/ScrollTrigger.min.js' %}" defer></script>
   <script src="{% static 'js/dashboard.js' %}" defer></script>
 {% endblock %}

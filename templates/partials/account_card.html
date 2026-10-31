@@ -1,10 +1,12 @@
 {% load money %}
 <article class="card account-card" data-animate="card">
+  <div class="account-card__topline"><span>ACCOUNT / 0{{ forloop.counter }}</span><span aria-hidden="true">↗</span></div>
   <header class="account-card__head">
     <h3>{{ account.nickname }}</h3>
     <p class="muted small">{{ account.bank }} · •••• {{ account.suffix }}</p>
   </header>
 
+  <span class="balance-label">ESTIMATED BALANCE</span>
   <p class="amount">{{ account.balance_paise|inr }}</p>
 
   <dl class="meta">

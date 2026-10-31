@@ -4,9 +4,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#14171a" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#101010">
   <title>{% block title %}Finance{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   {% block head %}{% endblock %}
@@ -15,8 +14,8 @@
   <a class="skip-link" href="#main">Skip to content</a>
 
   <header class="site-header">
-    <a class="brand" href="{% url 'core:dashboard' %}">Finance</a>
-    <span class="brand-note">Estimated balances</span>
+    <a class="brand" href="{% url 'core:dashboard' %}"><span class="brand-mark" aria-hidden="true">↗</span> Finance<span class="brand-dot">.</span></a>
+    <span class="brand-note">A clearer view of your money</span>
   </header>
 
   <nav class="tabbar" aria-label="Primary">

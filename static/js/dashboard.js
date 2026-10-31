@@ -1,103 +1,101 @@
-/* Dashboard motion layer.
- *
- * CSS owns layout, colour and instant feedback. GSAP owns timing only.
- * If GSAP is missing, or the user prefers reduced motion, every element is
- * shown immediately and this file does nothing else.
- */
+/* Progressive enhancement: financial values remain readable and unchanged. */
 (function () {
   "use strict";
-
-  var root = document.documentElement;
-
-  function revealAll() {
-    root.classList.remove("js");
-  }
-
-  if (!window.gsap) {
-    revealAll();
-    return;
-  }
-
-  // From here on, the head script's timeout will not reveal the page.
-  // Anything that throws is caught below and revealed instead.
+  document.documentElement.classList.remove("js");
+  if (!window.gsap) return;
   window.__financeMotion = true;
+  var gsap = window.gsap;
+  if (window.ScrollTrigger) gsap.registerPlugin(window.ScrollTrigger);
+  var media;
+  function startMotion() {
+  media = gsap.matchMedia();
 
-  try {
-    var gsap = window.gsap;
-    var mm = gsap.matchMedia();
+  media.add("(prefers-reduced-motion: no-preference)", function (context) {
+    var cleanups = [];
+    var intro = gsap.timeline({ defaults: { ease: "power3.out", duration: 0.9 } });
+    intro.from("[data-hero-line]", { yPercent: 115, rotate: 2, stagger: 0.13 })
+      .from("[data-hero]", { opacity: 0, y: 14, stagger: 0.1 }, 0.2)
+      .from("[data-orbit]", { opacity: 0, scale: 0.86, rotation: -12, duration: 1.2 }, 0.1);
+    var ring = document.querySelector("[data-ring]");
+    if (ring) intro.from(ring, { attr: { "stroke-dasharray": "0 100" }, duration: 1.6, ease: "power2.inOut" }, 0.35);
+    intro.from(".finance-stage", { clipPath: "inset(15% 10% 15% 10% round 100px)", duration: 1.4 }, 0)
+      .from(".sculpture-core", { scale: 0.2, rotation: -80, duration: 1.5, ease: "back.out(1.4)" }, 0.2);
+    var ambient = gsap.timeline({ repeat: -1 });
+    ambient.to(".ring-a", { rotationZ: "+=360", duration: 24, ease: "none" }, 0)
+      .to(".ring-b", { rotationZ: "-=360", duration: 24, ease: "none" }, 0)
+      .to(".ring-c", { rotationZ: "+=360", duration: 24, ease: "none" }, 0)
+      .to(".orbit-satellite", { rotation: 360, svgOrigin: "180 180", duration: 24, ease: "none" }, 0);
+    var floats = gsap.to(".floating-tag", { y: -16, rotation: "+=5", stagger: 0.5, duration: 2.5, repeat: -1, yoyo: true, ease: "sine.inOut" });
+    var ribbon = gsap.to(".ribbon-track", { xPercent: -50, duration: 28, ease: "none", repeat: -1 });
+    function visibility() {
+      [ambient, floats, ribbon].forEach(function (animation) { animation.paused(document.hidden); });
+    }
+    document.addEventListener("visibilitychange", visibility);
+    cleanups.push(function () { document.removeEventListener("visibilitychange", visibility); });
+    if (window.ScrollTrigger) {
+      gsap.to(".sculpture", { y: 100, rotation: 35, ease: "none", scrollTrigger: { trigger: ".overview-hero", start: "top top", end: "bottom top", scrub: 1 } });
+      gsap.to(".hero-copy", { y: 35, ease: "none", scrollTrigger: { trigger: ".overview-hero", start: "top top", end: "bottom top", scrub: 1 } });
+      gsap.to(".reading-progress", { scaleX: 1, ease: "none", scrollTrigger: { start: 0, end: "max", scrub: 0.3 } });
+      gsap.from(".account-grid > li", { y: 65, rotation: function (index) { return window.matchMedia("(min-width: 900px)").matches ? (index - 1) * 6 : 0; }, stagger: 0.15, ease: "power2.out", scrollTrigger: { trigger: ".account-grid", start: "top 95%", end: "top 55%", scrub: 0.7 } });
+    }
 
-    mm.add("(prefers-reduced-motion: reduce)", function () {
-      revealAll();
+    context.add("reveal", function (element, delay) {
+      gsap.from(element, { opacity: 0, y: 24, delay: delay, duration: 0.7, ease: "power3.out", clearProps: "opacity,transform" });
+      var progress = element.querySelector("[data-progress]");
+      if (progress) gsap.from(progress, { scaleX: 0, transformOrigin: "left", duration: 1.2, ease: "power3.out", clearProps: "transform" });
     });
+    if ("IntersectionObserver" in window) {
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry, index) {
+          if (!entry.isIntersecting) return;
+          context.reveal(entry.target, Math.min(index * 0.07, 0.21));
+          observer.unobserve(entry.target);
+        });
+      }, { threshold: 0.12 });
+      document.querySelectorAll("[data-animate]").forEach(function (element) { observer.observe(element); });
+      cleanups.push(function () { observer.disconnect(); });
+    }
+    return function () { cleanups.forEach(function (cleanup) { cleanup(); }); };
+  });
 
-    mm.add("(prefers-reduced-motion: no-preference)", function () {
-      var notice = gsap.utils.toArray("[data-animate='notice']");
-      var cards = gsap.utils.toArray("[data-animate='card']");
-      var rows = gsap.utils.toArray("[data-animate='txn']");
-      var goal = gsap.utils.toArray("[data-animate='goal']");
-      var bar = document.querySelector("[data-progress]");
-
-      if (!notice.length && !cards.length && !rows.length && !goal.length && !bar) {
-        revealAll();
-        return;
+  media.add("(prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine)", function (context) {
+    var cleanups = [];
+    document.querySelectorAll(".account-card").forEach(function (card) {
+      var rotateX = gsap.quickTo(card, "rotationX", { duration: 0.55, ease: "power3.out" });
+      var rotateY = gsap.quickTo(card, "rotationY", { duration: 0.55, ease: "power3.out" });
+      function move(event) {
+        var rect = card.getBoundingClientRect();
+        rotateX((0.5 - (event.clientY - rect.top) / rect.height) * 12);
+        rotateY(((event.clientX - rect.left) / rect.width - 0.5) * 12);
       }
-
-      var tl = gsap.timeline({
-        defaults: { duration: 0.35, ease: "power2.out" },
-        onComplete: revealAll,
-      });
-
-      if (notice.length) {
-        tl.fromTo(
-          notice,
-          { opacity: 0, y: 10 },
-          { opacity: 1, y: 0, stagger: 0.05 }
-        );
-      }
-
-      if (cards.length) {
-        tl.fromTo(
-          cards,
-          { opacity: 0, y: 12 },
-          { opacity: 1, y: 0, stagger: 0.06 },
-          notice.length ? "-=0.2" : 0
-        );
-      }
-
-      if (rows.length) {
-        tl.fromTo(
-          rows,
-          { opacity: 0, y: 10 },
-          { opacity: 1, y: 0, stagger: 0.04 },
-          "-=0.2"
-        );
-      }
-
-      if (goal.length) {
-        tl.fromTo(goal, { opacity: 0, y: 10 }, { opacity: 1, y: 0 }, "-=0.15");
-      }
-
-      if (bar) {
-        var target = Number(bar.getAttribute("value")) || 0;
-        var counter = { value: 0 };
-        bar.value = 0;
-
-        tl.to(
-          counter,
-          {
-            value: target,
-            duration: 0.6,
-            ease: "power2.out",
-            onUpdate: function () {
-              bar.value = counter.value;
-            },
-          },
-          0.2
-        );
-      }
+      function reset() { rotateX(0); rotateY(0); }
+      card.addEventListener("pointermove", move);
+      card.addEventListener("pointerleave", reset);
+      cleanups.push(function () { card.removeEventListener("pointermove", move); card.removeEventListener("pointerleave", reset); });
     });
-  } catch (err) {
-    revealAll();
-    throw err;
+    context.add("highlight", function (row, active) {
+      gsap.to(row, { x: active ? 5 : 0, backgroundColor: active ? "var(--accent-soft)" : "transparent", duration: 0.25, overwrite: "auto" });
+    });
+    document.querySelectorAll(".txn").forEach(function (row) {
+      function enter() { context.highlight(row, true); }
+      function leave() { context.highlight(row, false); }
+      row.addEventListener("pointerenter", enter);
+      row.addEventListener("pointerleave", leave);
+      cleanups.push(function () { row.removeEventListener("pointerenter", enter); row.removeEventListener("pointerleave", leave); });
+    });
+    return function () { cleanups.forEach(function (cleanup) { cleanup(); }); };
+  });
+  }
+  startMotion();
+  var toggle = document.querySelector(".motion-toggle");
+  if (toggle) {
+    toggle.hidden = false;
+    toggle.addEventListener("click", function () {
+      var paused = toggle.getAttribute("aria-pressed") !== "true";
+      toggle.setAttribute("aria-pressed", String(paused));
+      toggle.textContent = paused ? "Resume motion" : "Pause motion";
+      if (paused) media.revert();
+      else startMotion();
+    });
   }
 })();
