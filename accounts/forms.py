@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
@@ -9,6 +11,8 @@ from core.forms import RupeeField
 from .models import BalanceCheckpoint, BankAccount
 
 User = get_user_model()
+
+DATETIME_FORMAT = "%Y-%m-%dT%H:%M"
 
 
 class SignupForm(UserCreationForm):
@@ -113,3 +117,49 @@ class BankAccountForm(forms.ModelForm):
             )
 
         return account
+
+
+class ConfirmBalanceForm(forms.Form):
+    """The balance the bank shows right now.
+
+    Saving this becomes a new checkpoint. Everything recorded after it adjusts
+    the estimate, and everything recorded before it is treated as already
+    included in the figure you just typed.
+    """
+
+    amount = RupeeField(
+        label="Balance the bank shows",
+        help_text="Copy it from your bank app. Negative is allowed if the account is overdrawn.",
+        allow_negative=True,
+    )
+    effective_at = forms.DateTimeField(
+        label="As of",
+        input_formats=[
+            "%Y-%m-%dT%H:%M",
+            "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%d %H:%M",
+            "%Y-%m-%d %H:%M:%S",
+        ],
+        widget=forms.DateTimeInput(
+            attrs={"type": "datetime-local"},
+            format=DATETIME_FORMAT,
+        ),
+        help_text="When this balance was true at the bank. Usually now.",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.is_bound:
+            self.fields["effective_at"].initial = timezone.localtime().replace(
+                second=0, microsecond=0
+            )
+
+    def clean_effective_at(self):
+        value = self.cleaned_data["effective_at"]
+        # A balance cannot be known before it happens. A few minutes of grace
+        # absorbs small clock differences between the phone and the server.
+        if value > timezone.now() + timedelta(minutes=5):
+            raise forms.ValidationError(
+                "Choose a time in the past or the present."
+            )
+        return value

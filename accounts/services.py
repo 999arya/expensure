@@ -17,6 +17,7 @@ from .models import BankAccount
 
 @dataclass(frozen=True)
 class AccountCard:
+    id: int
     nickname: str
     bank: str
     suffix: str
@@ -61,6 +62,11 @@ def estimate_balance(account, checkpoint):
     return checkpoint.amount_paise + net
 
 
+def latest_checkpoint(account):
+    """The checkpoint the estimate is anchored to, or None."""
+    return account.checkpoints.order_by("-effective_at", "-id").first()
+
+
 def account_cards(user):
     """One card per active account, newest information included."""
     accounts = (
@@ -77,6 +83,7 @@ def account_cards(user):
 
         cards.append(
             AccountCard(
+                id=account.pk,
                 nickname=account.nickname,
                 bank=account.get_bank_display(),
                 suffix=account.account_suffix,

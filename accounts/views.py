@@ -2,14 +2,18 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.utils import timezone
+from django.views import View
 from django.views.generic import CreateView
 
+from core.formatting import format_inr
 from ledger.defaults import seed_default_categories
 
-from .forms import BankAccountForm, SignupForm
-from .models import BankAccount
+from .forms import BankAccountForm, ConfirmBalanceForm, SignupForm
+from .models import BalanceCheckpoint, BankAccount
+from .services import estimate_balance, latest_checkpoint
 
 
 @transaction.atomic
@@ -55,3 +59,60 @@ class AddAccountView(LoginRequiredMixin, CreateView):
             f"{self.object.nickname} added. You can record transactions on it now.",
         )
         return response
+
+
+class ConfirmBalanceView(LoginRequiredMixin, View):
+    """Record the balance the bank shows now as a new checkpoint.
+
+    Only the owner can do this: the account is looked up with `owner` in the
+    query, so another user's id is a 404 rather than a hint that it exists.
+    """
+
+    template_name = "accounts/confirm_balance.html"
+
+    def get_account(self):
+        return get_object_or_404(
+            BankAccount,
+            pk=self.kwargs["pk"],
+            owner=self.request.user,
+            is_active=True,
+        )
+
+    def render_form(self, account, form):
+        checkpoint = latest_checkpoint(account)
+        return render(
+            self.request,
+            self.template_name,
+            {
+                "account": account,
+                "form": form,
+                "estimate_paise": estimate_balance(account, checkpoint),
+                "confirmed_at": checkpoint.effective_at if checkpoint else None,
+            },
+        )
+
+    def get(self, request, pk):
+        return self.render_form(self.get_account(), ConfirmBalanceForm())
+
+    def post(self, request, pk):
+        account = self.get_account()
+        form = ConfirmBalanceForm(request.POST)
+
+        if not form.is_valid():
+            return self.render_form(account, form)
+
+        checkpoint = BalanceCheckpoint.objects.create(
+            account=account,
+            amount_paise=form.cleaned_data["amount"],
+            effective_at=form.cleaned_data["effective_at"],
+            source=BalanceCheckpoint.Source.MANUAL,
+            note="Balance confirmed by you.",
+        )
+
+        estimate = estimate_balance(account, latest_checkpoint(account))
+        messages.success(
+            request,
+            f"Balance confirmed as of {timezone.localtime(checkpoint.effective_at):%d %b, %H:%M}. "
+            f"Estimated balance for {account.nickname} is {format_inr(estimate)}.",
+        )
+        return redirect("core:dashboard")

@@ -8,10 +8,9 @@ and transaction capture is not guaranteed to be complete.
 
 ## Status
 
-Phase 2 complete: signup, login, logout, accounts with a starting balance, and
-manual transactions with date, category and account filters plus paging. Every
-page and every dropdown is scoped to the signed-in user. Next: confirming
-balances over time and the review queue.
+Phase 3 in progress. Accounts, authentication and manual transactions are done
+(Phase 2). You can now confirm a balance whenever you check your bank app, which
+re-anchors the estimate from that moment. The review queue is next.
 
 ## Requirements
 
@@ -91,6 +90,7 @@ Apps live at the repository root rather than under `apps/`.
 | `/accounts/login/` | Log in; honours a safe `?next=` |
 | `/accounts/logout/` | Log out (POST only, as Django 5 requires) |
 | `/accounts/add/` | Add an account and the balance it shows today |
+| `/accounts/<id>/confirm/` | Record the balance the bank shows now |
 
 Passwords go through Django's four validators (similarity, length, common
 password, all-numeric). The starter categories are seeded once per user and are
@@ -112,6 +112,16 @@ A transaction exactly at the checkpoint time is treated as already included.
 Transactions marked `needs_review` are excluded until someone decides. The rule
 lives in `accounts/services.py` so the dashboard and later reports cannot drift
 apart.
+
+### Confirming a balance again
+
+Every account card has **Confirm balance**. Type the figure your bank app shows
+and save. That becomes the newest checkpoint, so the estimate becomes exactly
+what you typed, and only movements recorded after that moment adjust it.
+
+Backdating is allowed and is stored as history: if you confirm a time older than
+your newest checkpoint, the estimate keeps using the newer one. A time in the
+future is rejected, because a balance cannot be known before it exists.
 
 ## Transactions
 

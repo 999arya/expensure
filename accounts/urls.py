@@ -14,4 +14,5 @@ urlpatterns = [
     ),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("add/", views.AddAccountView.as_view(), name="add"),
+    path("<int:pk>/confirm/", views.ConfirmBalanceView.as_view(), name="confirm"),
 ]

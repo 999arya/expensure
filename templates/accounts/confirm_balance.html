@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load money %}
+
+{% block title %}Confirm balance · Finance{% endblock %}
+
+{% block content %}
+  <section class="auth" aria-labelledby="auth-title">
+    <div class="auth-card">
+      <p class="eyebrow">ANCHOR THE ESTIMATE</p>
+      <h1 id="auth-title">Confirm balance</h1>
+      <p class="muted">
+        {{ account.nickname }} · •••• {{ account.account_suffix }}.
+        Enter what the bank shows right now. This becomes the fixed point your
+        next estimates grow from.
+      </p>
+
+      <dl class="meta meta--inline">
+        <div>
+          <dt>Estimated now</dt>
+          <dd>{{ estimate_paise|inr }}</dd>
+        </div>
+        <div>
+          <dt>Last confirmed</dt>
+          <dd>{% if confirmed_at %}{{ confirmed_at|date:"j M, g:i A" }}{% else %}never{% endif %}</dd>
+        </div>
+      </dl>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="form-errors" role="alert">
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+          </div>
+        {% endif %}
+        {% for field in form %}
+          {% include "partials/form_field.html" with field=field %}
+        {% endfor %}
+
+        <button class="button button--full" type="submit">Confirm this balance</button>
+      </form>
+
+      <p class="auth-switch">
+        <a href="{% url 'core:dashboard' %}">Cancel</a>
+      </p>
+    </div>
+  </section>
+{% endblock %}
