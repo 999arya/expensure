@@ -8,9 +8,10 @@ and transaction capture is not guaranteed to be complete.
 
 ## Status
 
-Phase 2 in progress. Signup, login, logout, adding an account with its starting
-balance, and recording transactions by hand all work. Transactions can be
-listed, filtered by date, category and account, and paged.
+Phase 2 complete: signup, login, logout, accounts with a starting balance, and
+manual transactions with date, category and account filters plus paging. Every
+page and every dropdown is scoped to the signed-in user. Next: confirming
+balances over time and the review queue.
 
 ## Requirements
 
@@ -48,6 +49,9 @@ same network. Set the environment variable fresh in each new terminal.
 ```powershell
 .\.venv\Scripts\python.exe manage.py test
 ```
+
+`core/test_security.py` checks the multi-user boundary: anonymous access,
+another user's ids in filters and form posts, CSRF, and password storage.
 
 ## Layout
 

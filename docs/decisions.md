@@ -20,14 +20,15 @@ across thousands of transactions. Integer paise makes every sum exact.
 **Cost:** every display path must format explicitly, and division (splitting a
 bill, for example) has to define a rounding rule.
 
-**Tested by:** `FormatInrTests` in `core/tests.py`; database check constraint
-`txn_amount_positive` in Phase 2.
+**Tested by:** `FormatInrTests` in `core/tests.py`, `ParseInrTests` in
+`core/test_parsing.py`, and the database check constraint
+`txn_amount_positive` on `ledger.Transaction`.
 
 ---
 
 ## 002 — A checkpoint only covers transactions after its effective time
 
-**Status:** accepted (implementation in Phase 3)
+**Status:** accepted
 
 For each account:
 
@@ -48,9 +49,9 @@ Guessing produces balances that are wrong in a direction the user cannot see.
 **Cost:** some transactions sit in review until the user decides. That is the
 correct trade: a visible question beats a silent error.
 
-**Tested by:** the Phase 3 cases — ₹10,000 checkpoint, ₹500 debit, ₹2,000 credit
-gives ₹11,500; replaying a transaction changes nothing; an older transaction
-already covered by the checkpoint does not move the estimate.
+**Tested by:** `EstimateBalanceTests` in `accounts/test_services.py`, including a
+checkpoint of ₹10,000 with a ₹500 debit and a ₹2,000 credit giving ₹11,500, and
+transactions exactly at or before the checkpoint not being counted twice.
 
 ---
 
@@ -97,7 +98,6 @@ allowance unchanged.
 ## 005 — Transfers and adjustments never count as income or spending
 
 **Status:** accepted (implementation in Phase 3)
-
 Own-account transfers, opening balances, balance corrections and unresolved
 credits are excluded from net savings. A transfer needs both legs confirmed; a
 single unmatched leg stays `unresolved` and is never treated as income.
