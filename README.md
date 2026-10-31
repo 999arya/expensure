@@ -8,8 +8,9 @@ and transaction capture is not guaranteed to be complete.
 
 ## Status
 
-Phase 1 complete: responsive dashboard, fictional data, motion layer.
-No database writes and no authentication yet.
+Phase 2 in progress. Accounts, categories and transactions exist in the
+database, and the app has signup, login and logout. The dashboard still shows
+fictional data; it starts using your own accounts in the next step.
 
 ## Requirements
 
@@ -53,7 +54,9 @@ same network. Set the environment variable fresh in each new terminal.
 ```
 config/            settings, root URLs, WSGI/ASGI entry points
 core/              dashboard view, demo data, formatting, tests
-templates/         base.html, dashboard.html, partials/
+accounts/          BankAccount, BalanceCheckpoint, signup/login/logout
+ledger/            Category, Transaction, starter categories
+templates/         base.html, dashboard.html, accounts/, partials/
 static/            css/, js/, vendor/gsap/
 docs/              decisions.md
 ```
@@ -65,11 +68,26 @@ Apps live at the repository root rather than under `apps/`.
 1. `manage.py runserver` sets `DJANGO_SETTINGS_MODULE=config.settings`.
 2. `config/settings.py` defines installed apps, database, template and static
    directories, and the timezone (`Asia/Kolkata`, stored in UTC).
-3. `config/urls.py` matches `/` and delegates to `core.urls`.
-4. `core/urls.py` maps `""` to `core.views.dashboard`.
-5. `core/views.py` builds a context dictionary and calls `render()`.
-6. `templates/dashboard.html` extends `templates/base.html` and pulls styles
+3. `config/urls.py` matches `/` and `/accounts/`, and delegates to the apps.
+4. `core/urls.py` maps `""` to `core.views.dashboard`, which requires login.
+   Anonymous visitors are sent to `/accounts/login/?next=/`.
+5. `accounts/views.py` handles signup: it creates the user and their starter
+   categories in one transaction, then logs them in.
+6. `core/views.py` builds a context dictionary and calls `render()`.
+7. `templates/dashboard.html` extends `templates/base.html` and pulls styles
    from `static/css/app.css`.
+
+## Accounts and login
+
+| URL | What it does |
+| --- | --- |
+| `/accounts/signup/` | Create a user and 14 starter categories, then log in |
+| `/accounts/login/` | Log in; honours a safe `?next=` |
+| `/accounts/logout/` | Log out (POST only, as Django 5 requires) |
+
+Passwords go through Django's four validators (similarity, length, common
+password, all-numeric). The starter categories are seeded once per user and are
+safe to re-run.
 
 ## Development states
 
@@ -99,7 +117,7 @@ See `docs/decisions.md` for the money, checkpoint, refund and transfer rules.
 | Phase | Scope | Status |
 | --- | --- | --- |
 | 1 | Dashboard, layout, states, motion | Done |
-| 2 | Accounts, auth, manual transactions | Next |
+| 2 | Accounts, auth, manual transactions | In progress |
 | 3 | Estimated balances, corrections, transfers | Planned |
 | 4 | Goals and spending allowance | Planned |
 | 5 | Monthly reports and CSV | Planned |

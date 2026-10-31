@@ -1,7 +1,10 @@
+from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
 from .formatting import format_inr
+
+User = get_user_model()
 
 
 class FormatInrTests(SimpleTestCase):
@@ -26,8 +29,19 @@ class FormatInrTests(SimpleTestCase):
 
 
 class DashboardTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="asha", password="test-pass-123")
+        self.client.force_login(self.user)
+
     def test_url_reverses_to_root(self):
         self.assertEqual(reverse("core:dashboard"), "/")
+
+    def test_dashboard_requires_login(self):
+        self.client.logout()
+
+        response = self.client.get("/")
+
+        self.assertRedirects(response, "/accounts/login/?next=/")
 
     def test_dashboard_renders(self):
         response = self.client.get("/")
@@ -48,6 +62,10 @@ class DashboardTests(TestCase):
 
 class DashboardStateTests(TestCase):
     """The ?state= preview only exists while DEBUG is on."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="asha", password="test-pass-123")
+        self.client.force_login(self.user)
 
     @override_settings(DEBUG=True)
     def test_ready_state_shows_data_and_switcher(self):
@@ -98,6 +116,10 @@ class DashboardStateTests(TestCase):
 
 
 class MotionAssetTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="asha", password="test-pass-123")
+        self.client.force_login(self.user)
+
     def test_dashboard_loads_motion_assets(self):
         response = self.client.get("/")
 

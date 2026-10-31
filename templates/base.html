@@ -14,8 +14,23 @@
   <a class="skip-link" href="#main">Skip to content</a>
 
   <header class="site-header">
-    <a class="brand" href="{% url 'core:dashboard' %}"><span class="brand-mark" aria-hidden="true">↗</span> Finance<span class="brand-dot">.</span></a>
-    <span class="brand-note">A clearer view of your money</span>
+    <div class="site-header__brand">
+      <a class="brand" href="{% url 'core:dashboard' %}"><span class="brand-mark" aria-hidden="true">↗</span> Finance<span class="brand-dot">.</span></a>
+      <span class="brand-note">A clearer view of your money</span>
+    </div>
+
+    <div class="site-account">
+      {% if user.is_authenticated %}
+        <span class="site-account__name">{{ user.get_username }}</span>
+        <form method="post" action="{% url 'accounts:logout' %}">
+          {% csrf_token %}
+          <button class="link-button" type="submit">Log out</button>
+        </form>
+      {% else %}
+        <a href="{% url 'accounts:login' %}">Log in</a>
+        <a href="{% url 'accounts:signup' %}">Sign up</a>
+      {% endif %}
+    </div>
   </header>
 
   <nav class="tabbar" aria-label="Primary">

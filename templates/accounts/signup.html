@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Create account · Finance{% endblock %}
+
+{% block content %}
+  <section class="auth" aria-labelledby="auth-title">
+    <div class="auth-card">
+      <p class="eyebrow">START HERE</p>
+      <h1 id="auth-title">Create your account</h1>
+      <p class="muted">
+        Add your accounts yourself. There is no bank connection and nothing is
+        read from your bank.
+      </p>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="form-errors" role="alert">
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+          </div>
+        {% endif %}
+
+        {% for field in form %}
+          {% include "partials/form_field.html" with field=field %}
+        {% endfor %}
+
+        <button class="button button--full" type="submit">Create account</button>
+      </form>
+
+      <p class="auth-switch">
+        Already have an account? <a href="{% url 'accounts:login' %}">Log in</a>
+      </p>
+    </div>
+  </section>
+{% endblock %}

@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
 from . import demo
@@ -7,6 +8,7 @@ from . import demo
 STATES = ("ready", "empty", "loading", "error")
 
 
+@login_required
 def dashboard(request):
     page_state = "ready"
 
