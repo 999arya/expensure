@@ -191,3 +191,42 @@ class MotionAssetTests(TestCase):
 
         self.assertContains(response, "vendor/gsap/gsap.min.js")
         self.assertContains(response, "js/dashboard.js")
+
+
+class NavigationTests(TestCase):
+    """The bottom bar marks exactly the section you are in."""
+
+    def setUp(self):
+        self.user = make_user()
+        self.client.force_login(self.user)
+
+    def current_links(self, url):
+        response = self.client.get(url)
+        return [
+            link
+            for link in response.content.decode().split("<a ")[1:]
+            if 'aria-current="page"' in link.split(">")[0]
+        ]
+
+    def test_overview_is_current_on_the_dashboard(self):
+        links = self.current_links("/")
+
+        self.assertEqual(len(links), 1)
+        self.assertIn('href="/"', links[0])
+
+    def test_activity_is_current_on_the_transaction_list(self):
+        links = self.current_links("/transactions/")
+
+        self.assertEqual(len(links), 1)
+        self.assertIn('href="/transactions/"', links[0])
+
+    def test_activity_is_current_while_adding_a_transaction(self):
+        make_account(self.user)
+
+        links = self.current_links("/transactions/add/")
+
+        self.assertEqual(len(links), 1)
+        self.assertIn('href="/transactions/"', links[0])
+
+    def test_no_section_is_current_on_account_settings(self):
+        self.assertEqual(self.current_links("/accounts/add/"), [])

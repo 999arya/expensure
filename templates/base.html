@@ -34,8 +34,8 @@
   </header>
 
   <nav class="tabbar" aria-label="Primary">
-    <a href="{% url 'core:dashboard' %}" aria-current="page">Overview</a>
-    <span>Activity</span>
+    <a href="{% url 'core:dashboard' %}"{% if request.resolver_match.app_name == "core" %} aria-current="page"{% endif %}>Overview</a>
+    <a href="{% url 'ledger:list' %}"{% if request.resolver_match.app_name == "ledger" %} aria-current="page"{% endif %}>Activity</a>
     <span>Goals</span>
     <span>Reports</span>
   </nav>
