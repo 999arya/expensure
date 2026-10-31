@@ -1,0 +1,28 @@
+# Virtual environment
+.venv/
+venv/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Local database
+db.sqlite3
+db.sqlite3-journal
+
+# Secrets and local settings
+.env
+.env.*
+*.local
+
+# Collected static files (production)
+staticfiles/
+
+# Logs and OS noise
+*.log
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
