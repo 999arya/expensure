@@ -1,0 +1,14 @@
+{% load money %}
+<article class="card account-card">
+  <header class="account-card__head">
+    <h3>{{ account.nickname }}</h3>
+    <p class="muted small">{{ account.bank }} · •••• {{ account.suffix }}</p>
+  </header>
+
+  <p class="amount">{{ account.balance_paise|inr }}</p>
+
+  <dl class="meta">
+    <div><dt>Last confirmed</dt><dd>{{ account.confirmed_at|date:"j M, g:i A" }}</dd></div>
+    <div><dt>Last captured</dt><dd>{{ account.captured_at|date:"j M, g:i A" }}</dd></div>
+  </dl>
+</article>
