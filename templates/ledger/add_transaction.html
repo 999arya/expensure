@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Add transaction · Finance{% endblock %}
+
+{% block content %}
+  <section class="auth" aria-labelledby="auth-title">
+    <div class="auth-card">
+      <p class="eyebrow">ONE MOVEMENT AT A TIME</p>
+      <h1 id="auth-title">Add transaction</h1>
+      <p class="muted">
+        Record what the bank will show. The balance is recalculated from your
+        last confirmed balance, so nothing here touches the bank.
+      </p>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="form-errors" role="alert">
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+          </div>
+        {% endif %}
+
+        {% for field in form %}
+          {% include "partials/form_field.html" with field=field %}
+        {% endfor %}
+
+        <button class="button button--full" type="submit">Save transaction</button>
+      </form>
+
+      <p class="auth-switch">
+        <a href="{% url 'ledger:list' %}">Cancel</a>
+      </p>
+    </div>
+  </section>
+{% endblock %}

@@ -97,31 +97,26 @@
     <section class="section" aria-labelledby="transactions-heading">
       <div class="section-head">
         <h2 id="transactions-heading">Recent transactions</h2>
-        <span class="muted small">02 — Money in motion</span>
+        <div class="section-head__side">
+          <span class="muted small">02 — Money in motion</span>
+          <a class="text-link" href="{% url 'ledger:list' %}">All</a>
+          {% if accounts %}<a class="text-link" href="{% url 'ledger:add' %}">Add transaction</a>{% endif %}
+        </div>
       </div>
 
       {% if transactions %}
         <ul class="txn-list" role="list">
           {% for txn in transactions %}
-            <li class="txn" data-animate="txn">
-              <span class="txn-icon {% if txn.direction == 'credit' %}txn-icon--credit{% endif %}" aria-hidden="true">{% if txn.direction == 'credit' %}↙{% else %}↗{% endif %}</span>
-              <div class="txn__main">
-                <p class="txn__desc">{{ txn.description }}</p>
-                <p class="muted small">{{ txn.occurred_at|date:"j M, g:i A" }} · {{ txn.category }}</p>
-              </div>
-              <div class="txn__side">
-                <p class="txn__amount {% if txn.direction == 'credit' %}is-credit{% else %}is-debit{% endif %}">
-                  {% if txn.direction == 'credit' %}+{% else %}−{% endif %}{{ txn.amount_paise|inr }}
-                </p>
-                {% if txn.status == "needs_review" %}
-                  <span class="chip chip--warn">Needs review</span>
-                {% endif %}
-              </div>
-            </li>
+            {% include "partials/transaction_row.html" with txn=txn animate=True %}
           {% endfor %}
         </ul>
       {% else %}
-        <p class="empty">No transactions recorded yet.</p>
+        <div class="empty">
+          <p>No transactions recorded yet.</p>
+          {% if accounts %}
+            <a class="button" href="{% url 'ledger:add' %}">Add transaction</a>
+          {% endif %}
+        </div>
       {% endif %}
     </section>
 

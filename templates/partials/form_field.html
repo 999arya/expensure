@@ -1,12 +1,31 @@
-{% if field.errors %}
-  <p class="field-error" id="{{ field.id_for_label }}-error">
-    {% for error in field.errors %}{{ error }}{% if not forloop.last %} {% endif %}{% endfor %}
-  </p>
+{% comment %}
+One labelled form control.
+
+Radio groups get a fieldset and legend, because a group has no single input to
+point a `for` at. Text inputs and selects get a normal label.
+{% endcomment %}
+{% if field.widget_type == "radioselect" %}
+  <fieldset class="field{% if field.errors %} field--error{% endif %}">
+    <legend>{{ field.label }}</legend>
+    {{ field }}
+    {% if field.help_text %}<div class="field-help">{{ field.help_text|safe }}</div>{% endif %}
+    {% if field.errors %}
+      <p class="field-error">
+        {% for error in field.errors %}{{ error }}{% if not forloop.last %} {% endif %}{% endfor %}
+      </p>
+    {% endif %}
+  </fieldset>
+{% else %}
+  <div class="field{% if field.errors %} field--error{% endif %}">
+    <label{% if field.id_for_label %} for="{{ field.id_for_label }}"{% endif %}>{{ field.label }}</label>
+    {{ field }}
+    {% if field.help_text %}
+      <div class="field-help"{% if field.id_for_label %} id="{{ field.id_for_label }}-help"{% endif %}>{{ field.help_text|safe }}</div>
+    {% endif %}
+    {% if field.errors %}
+      <p class="field-error"{% if field.id_for_label %} id="{{ field.id_for_label }}-error"{% endif %}>
+        {% for error in field.errors %}{{ error }}{% if not forloop.last %} {% endif %}{% endfor %}
+      </p>
+    {% endif %}
+  </div>
 {% endif %}
-<div class="field{% if field.errors %} field--error{% endif %}">
-  <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-  {{ field }}
-  {% if field.help_text %}
-    <div class="field-help" id="{{ field.id_for_label }}-help">{{ field.help_text|safe }}</div>
-  {% endif %}
-</div>

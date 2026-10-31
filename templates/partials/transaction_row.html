@@ -1,0 +1,18 @@
+{% load money %}
+<li class="txn"{% if animate %} data-animate="txn"{% endif %}>
+  <span class="txn-icon {% if txn.direction == 'credit' %}txn-icon--credit{% endif %}" aria-hidden="true">{% if txn.direction == 'credit' %}↙{% else %}↗{% endif %}</span>
+  <div class="txn__main">
+    <p class="txn__desc">{{ txn.description }}</p>
+    <p class="muted small">
+      {{ txn.occurred_at|date:"j M, g:i A" }}{% if show_account %} · {{ txn.account.nickname }}{% endif %}{% if txn.category %} · {{ txn.category }}{% endif %}
+    </p>
+  </div>
+  <div class="txn__side">
+    <p class="txn__amount {% if txn.direction == 'credit' %}is-credit{% else %}is-debit{% endif %}">
+      {% if txn.direction == 'credit' %}+{% else %}−{% endif %}{{ txn.amount_paise|inr }}
+    </p>
+    {% if txn.status == "needs_review" %}
+      <span class="chip chip--warn">Needs review</span>
+    {% endif %}
+  </div>
+</li>

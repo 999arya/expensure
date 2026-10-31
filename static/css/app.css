@@ -845,12 +845,17 @@ a {
 }
 
 .field {
+  min-width: 0;
   margin-top: var(--space-4);
+  padding: 0;
+  border: 0;
 }
 
-.field label {
+.field label,
+.field legend {
   display: block;
   margin-bottom: var(--space-1);
+  padding: 0;
   font-size: 0.85rem;
   font-weight: 600;
 }
@@ -954,4 +959,111 @@ a {
 
 .empty .button {
   margin-top: var(--space-2);
+}
+
+/* =========================================================
+   Transactions
+   ========================================================= */
+
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.page-head h1 {
+  margin: 0;
+  font-size: clamp(1.6rem, 6vw, 2.1rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.page-head .eyebrow {
+  margin-bottom: var(--space-1);
+  color: var(--muted);
+}
+
+.filters {
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.filters__grid {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.filters .field {
+  margin-top: 0;
+}
+
+.filters__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  font-size: 0.85rem;
+}
+
+.pager a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+}
+
+@media (min-width: 640px) {
+  .filters__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .filters__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Radio choices sit in a row rather than stacking like text fields. */
+.choice-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.field .choice-list label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  font-weight: 400;
+}
+
+.field .choice-list input {
+  width: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  accent-color: var(--accent);
 }

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load query %}
+
+{% block title %}Transactions · Finance{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">MONEY IN MOTION</p>
+      <h1>Transactions</h1>
+    </div>
+    <a class="button" href="{% url 'ledger:add' %}">Add transaction</a>
+  </header>
+
+  {% if filters.errors %}
+    <div class="form-errors" role="alert">
+      {% for error in filters.errors %}<p>{{ error }}</p>{% endfor %}
+    </div>
+  {% endif %}
+
+  <form class="filters" method="get" role="search" aria-label="Filter transactions">
+    <div class="filters__grid">
+      <div class="field">
+        <label for="from">From</label>
+        <input type="date" id="from" name="from" value="{{ filters.date_from|date:'Y-m-d' }}">
+      </div>
+      <div class="field">
+        <label for="to">To</label>
+        <input type="date" id="to" name="to" value="{{ filters.date_to|date:'Y-m-d' }}">
+      </div>
+      <div class="field">
+        <label for="category">Category</label>
+        <select id="category" name="category">
+          <option value="">All categories</option>
+          {% for category in categories %}
+            <option value="{{ category.pk }}"{% if filters.category and filters.category.pk == category.pk %} selected{% endif %}>{{ category.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="account">Account</label>
+        <select id="account" name="account">
+          <option value="">All accounts</option>
+          {% for account in accounts %}
+            <option value="{{ account.pk }}"{% if filters.account and filters.account.pk == account.pk %} selected{% endif %}>{{ account.nickname }} ····{{ account.account_suffix }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="filters__actions">
+      <button class="button" type="submit">Apply filters</button>
+      {% if filters.is_active %}
+        <a class="text-link" href="{% url 'ledger:list' %}">Clear</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <p class="muted small">
+    {{ total_count }} transaction{{ total_count|pluralize }}{% if filters.is_active %} matching these filters{% endif %}
+  </p>
+
+  {% if transactions %}
+    <ul class="txn-list" role="list">
+      {% for txn in transactions %}
+        {% include "partials/transaction_row.html" with txn=txn show_account=True %}
+      {% endfor %}
+    </ul>
+
+    {% if page_obj.has_other_pages %}
+      <nav class="pager" aria-label="Transaction pages">
+        {% if page_obj.has_previous %}
+          <a href="{% page_url page_obj.previous_page_number %}">Newer</a>
+        {% endif %}
+        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+          <a href="{% page_url page_obj.next_page_number %}">Older</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="empty">
+      <p>
+        {% if filters.is_active %}
+          No transactions match these filters.
+        {% else %}
+          No transactions recorded yet.
+        {% endif %}
+      </p>
+      {% if filters.is_active %}
+        <a class="button" href="{% url 'ledger:list' %}">Clear filters</a>
+      {% else %}
+        <a class="button" href="{% url 'ledger:add' %}">Add transaction</a>
+      {% endif %}
+    </div>
+  {% endif %}
+{% endblock %}

@@ -8,9 +8,9 @@ and transaction capture is not guaranteed to be complete.
 
 ## Status
 
-Phase 2 in progress. Signup, login, logout, and adding an account with its
-starting balance all work, and the dashboard shows your own accounts with an
-estimated balance. Manual transaction entry is next.
+Phase 2 in progress. Signup, login, logout, adding an account with its starting
+balance, and recording transactions by hand all work. Transactions can be
+listed, filtered by date, category and account, and paged.
 
 ## Requirements
 
@@ -55,8 +55,8 @@ same network. Set the environment variable fresh in each new terminal.
 config/            settings, root URLs, WSGI/ASGI entry points
 core/              dashboard view, money parsing and formatting, tests
 accounts/          BankAccount, BalanceCheckpoint, signup/login/logout
-ledger/            Category, Transaction, starter categories
-templates/         base.html, dashboard.html, accounts/, partials/
+ledger/            Category, Transaction, filters, starter categories
+templates/         base.html, dashboard.html, accounts/, ledger/, partials/
 static/            css/, js/, vendor/gsap/
 docs/              decisions.md
 ```
@@ -68,7 +68,8 @@ Apps live at the repository root rather than under `apps/`.
 1. `manage.py runserver` sets `DJANGO_SETTINGS_MODULE=config.settings`.
 2. `config/settings.py` defines installed apps, database, template and static
    directories, and the timezone (`Asia/Kolkata`, stored in UTC).
-3. `config/urls.py` matches `/` and `/accounts/`, and delegates to the apps.
+3. `config/urls.py` matches `/`, `/accounts/` and `/transactions/`, and
+   delegates to the apps.
 4. `core/urls.py` maps `""` to `core.views.dashboard`, which requires login.
    Anonymous visitors are sent to `/accounts/login/?next=/`.
 5. `accounts/views.py` handles signup: it creates the user and their starter
@@ -107,6 +108,24 @@ A transaction exactly at the checkpoint time is treated as already included.
 Transactions marked `needs_review` are excluded until someone decides. The rule
 lives in `accounts/services.py` so the dashboard and later reports cannot drift
 apart.
+
+## Transactions
+
+| URL | What it does |
+| --- | --- |
+| `/transactions/` | Your transactions, newest first, 50 per page |
+| `/transactions/add/` | Record one movement by hand |
+
+Amounts are typed as text, so `1,23,456.78` and `1234.5` both work and become
+exact integer paise. A transaction is posted the moment you save it, because you
+are the one asserting it happened. With a single account it is preselected;
+with more, the dropdown lists only your own accounts.
+
+The list filters on `?from=`, `?to=` (both `YYYY-MM-DD`), `?category=` and
+`?account=`. The `to` day is included in full. A filter that cannot be read — a
+bad date, someone else's category id — shows a message and returns no rows
+rather than quietly showing everything, so an empty page always means what it
+says. Paging keeps the current filters.
 
 ## Development states
 
