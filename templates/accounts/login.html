@@ -1,10 +1,8 @@
-{% extends "base.html" %}
+{% extends "accounts/auth_base.html" %}
 
-{% block title %}Log in · Finance{% endblock %}
+{% block title %}Log in · Expensure{% endblock %}
 
-{% block content %}
-  <section class="auth" aria-labelledby="auth-title">
-    <div class="auth-card">
+{% block auth_content %}
       <p class="eyebrow">WELCOME BACK</p>
       <h1 id="auth-title">Log in</h1>
       <p class="muted">Your accounts and transactions, in one place.</p>
@@ -30,6 +28,4 @@
       <p class="auth-switch">
         New here? <a href="{% url 'accounts:signup' %}">Create an account</a>
       </p>
-    </div>
-  </section>
 {% endblock %}

@@ -228,5 +228,8 @@ class NavigationTests(TestCase):
         self.assertEqual(len(links), 1)
         self.assertIn('href="/transactions/"', links[0])
 
-    def test_no_section_is_current_on_account_settings(self):
-        self.assertEqual(self.current_links("/accounts/add/"), [])
+    def test_add_account_is_current_on_account_creation(self):
+        links = self.current_links("/accounts/add/")
+
+        self.assertEqual(len(links), 1)
+        self.assertIn('href="/accounts/add/"', links[0])

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block body_class %}auth-page{% endblock %}
+{% block navigation %}{% endblock %}
+{% block content %}
+  <div class="auth-layout">
+    <aside class="auth-story" aria-labelledby="auth-story-title">
+      <p class="eyebrow">YOUR MONEY. YOUR PERSPECTIVE.</p>
+      <h2 id="auth-story-title" data-auth-intro>Good things<br>start with<br><em>clarity.</em></h2>
+      <p class="auth-story__copy" data-auth-intro>A space for your accounts, your everyday spending, and whatever comes next.</p>
+      <div class="auth-art" aria-hidden="true">
+        <div class="sculpture"><div class="sculpture-ring ring-a"></div><div class="sculpture-ring ring-b"></div><div class="sculpture-ring ring-c"></div><div class="sculpture-core">₹</div></div>
+        <span class="auth-art__label">A LITTLE CLARITY. MORE POSSIBILITY.</span>
+      </div>
+      <div class="auth-story__foot"><span>01 / YOUR NEXT CHAPTER</span><button class="motion-toggle" type="button" aria-pressed="false" hidden>Pause motion</button></div>
+    </aside>
+    <section class="auth-form-panel" aria-labelledby="auth-title">
+      <div class="auth-card">{% block auth_content %}{% endblock %}</div>
+      <p class="auth-note"><span aria-hidden="true">↗</span> Your records, your control. No live bank connection.</p>
+    </section>
+  </div>
+{% endblock %}
+{% block footer %}<footer class="auth-footer"><span>EXPENSURE / A CLEARER VIEW</span><span>Built around your everyday.</span></footer>{% endblock %}
+{% block scripts %}
+  <script src="{% static 'vendor/gsap/gsap.min.js' %}" defer></script>
+  <script src="{% static 'js/auth.js' %}" defer></script>
+{% endblock %}
