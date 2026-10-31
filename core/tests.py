@@ -1,4 +1,4 @@
-from django.test import SimpleTestCase, TestCase
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
 from .formatting import format_inr
@@ -44,3 +44,54 @@ class DashboardTests(TestCase):
         self.assertContains(response, "₹24,500.00")
         self.assertContains(response, "Emergency fund")
         self.assertContains(response, "Needs review")
+
+
+class DashboardStateTests(TestCase):
+    """The ?state= preview only exists while DEBUG is on."""
+
+    @override_settings(DEBUG=True)
+    def test_ready_state_shows_data_and_switcher(self):
+        response = self.client.get("/?state=ready")
+
+        self.assertContains(response, "Kotak Savings")
+        self.assertContains(response, "Preview state:")
+
+    @override_settings(DEBUG=True)
+    def test_empty_state(self):
+        response = self.client.get("/?state=empty")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Kotak Savings")
+        self.assertContains(response, "No accounts yet.")
+        self.assertContains(response, "No transactions recorded yet.")
+        self.assertNotContains(response, "Savings goal")
+
+    @override_settings(DEBUG=True)
+    def test_loading_state(self):
+        response = self.client.get("/?state=loading")
+
+        self.assertContains(response, 'aria-busy="true"')
+        self.assertContains(response, "Loading your dashboard")
+        self.assertNotContains(response, "Kotak Savings")
+
+    @override_settings(DEBUG=True)
+    def test_error_state(self):
+        response = self.client.get("/?state=error")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "load your dashboard")
+        self.assertContains(response, "Try again")
+        self.assertNotContains(response, "Kotak Savings")
+
+    @override_settings(DEBUG=True)
+    def test_unknown_state_falls_back_to_ready(self):
+        response = self.client.get("/?state=nonsense")
+
+        self.assertContains(response, "Kotak Savings")
+
+    @override_settings(DEBUG=False)
+    def test_states_are_ignored_when_debug_is_off(self):
+        response = self.client.get("/?state=error")
+
+        self.assertContains(response, "Kotak Savings")
+        self.assertNotContains(response, "Preview state:")

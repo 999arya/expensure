@@ -7,78 +7,114 @@
   <h1>Overview</h1>
   <p class="muted">Balances are estimates from your last confirmed balance plus the transactions recorded since then.</p>
 
-  {% if review_count == 1 %}
-    <div class="notice" role="status">
-      <p>1 transaction needs review. It is not counted in your balance yet.</p>
+  {% if page_state == "error" %}
+    <section class="state-panel" role="alert">
+      <h2>We couldn't load your dashboard</h2>
+      <p class="muted">Nothing was changed. Your recorded transactions are safe.</p>
+      <a class="button" href="{% url 'core:dashboard' %}">Try again</a>
+    </section>
+
+  {% elif page_state == "loading" %}
+    <div class="state-loading" aria-busy="true">
+      <div class="account-grid" aria-hidden="true">
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>
+      </div>
+      <div class="txn-list" aria-hidden="true">
+        <div class="skeleton skeleton-row"></div>
+        <div class="skeleton skeleton-row"></div>
+        <div class="skeleton skeleton-row"></div>
+      </div>
+      <p class="visually-hidden" role="status">Loading your dashboard…</p>
     </div>
-  {% elif review_count %}
-    <div class="notice" role="status">
-      <p>{{ review_count }} transactions need review. They are not counted in your balance yet.</p>
-    </div>
+
+  {% else %}
+    {% if review_count == 1 %}
+      <div class="notice" role="status">
+        <p>1 transaction needs review. It is not counted in your balance yet.</p>
+      </div>
+    {% elif review_count %}
+      <div class="notice" role="status">
+        <p>{{ review_count }} transactions need review. They are not counted in your balance yet.</p>
+      </div>
+    {% endif %}
+
+    <section class="section" aria-labelledby="accounts-heading">
+      <div class="section-head">
+        <h2 id="accounts-heading">Accounts</h2>
+        <span class="muted small">Estimated</span>
+      </div>
+
+      {% if accounts %}
+        <ul class="account-grid" role="list">
+          {% for account in accounts %}
+            <li>{% include "partials/account_card.html" %}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="empty">No accounts yet.</p>
+      {% endif %}
+    </section>
+
+    <section class="section" aria-labelledby="transactions-heading">
+      <div class="section-head">
+        <h2 id="transactions-heading">Recent transactions</h2>
+        <span class="muted small">Fictional data</span>
+      </div>
+
+      {% if transactions %}
+        <ul class="txn-list" role="list">
+          {% for txn in transactions %}
+            <li class="txn">
+              <div class="txn__main">
+                <p class="txn__desc">{{ txn.description }}</p>
+                <p class="muted small">{{ txn.occurred_at|date:"j M, g:i A" }} · {{ txn.category }}</p>
+              </div>
+              <div class="txn__side">
+                <p class="txn__amount {% if txn.direction == 'credit' %}is-credit{% else %}is-debit{% endif %}">
+                  {% if txn.direction == 'credit' %}+{% else %}−{% endif %}{{ txn.amount_paise|inr }}
+                </p>
+                {% if txn.status == "needs_review" %}
+                  <span class="chip chip--warn">Needs review</span>
+                {% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="empty">No transactions recorded yet.</p>
+      {% endif %}
+    </section>
+
+    {% if goal %}
+      <section class="section" aria-labelledby="goal-heading">
+        <h2 id="goal-heading">Savings goal</h2>
+
+        <div class="card">
+          <div class="goal-head">
+            <h3>{{ goal.name }}</h3>
+            <span class="muted small">{{ goal.percent }}%</span>
+          </div>
+          <progress
+            class="progress"
+            value="{{ goal.saved_paise }}"
+            max="{{ goal.target_paise }}"
+            aria-label="{{ goal.name }} progress"
+          >{{ goal.percent }}%</progress>
+          <p class="muted small">{{ goal.saved_paise|inr }} of {{ goal.target_paise|inr }}</p>
+        </div>
+      </section>
+    {% endif %}
   {% endif %}
 
-  <section class="section" aria-labelledby="accounts-heading">
-    <div class="section-head">
-      <h2 id="accounts-heading">Accounts</h2>
-      <span class="muted small">Estimated</span>
-    </div>
-
-    {% if accounts %}
-      <ul class="account-grid" role="list">
-        {% for account in accounts %}
-          <li>{% include "partials/account_card.html" %}</li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p class="empty">No accounts yet.</p>
-    {% endif %}
-  </section>
-
-  <section class="section" aria-labelledby="transactions-heading">
-    <div class="section-head">
-      <h2 id="transactions-heading">Recent transactions</h2>
-      <span class="muted small">Fictional data</span>
-    </div>
-
-    {% if transactions %}
-      <ul class="txn-list" role="list">
-        {% for txn in transactions %}
-          <li class="txn">
-            <div class="txn__main">
-              <p class="txn__desc">{{ txn.description }}</p>
-              <p class="muted small">{{ txn.occurred_at|date:"j M, g:i A" }} · {{ txn.category }}</p>
-            </div>
-            <div class="txn__side">
-              <p class="txn__amount {% if txn.direction == 'credit' %}is-credit{% else %}is-debit{% endif %}">
-                {% if txn.direction == 'credit' %}+{% else %}−{% endif %}{{ txn.amount_paise|inr }}
-              </p>
-              {% if txn.status == "needs_review" %}
-                <span class="chip chip--warn">Needs review</span>
-              {% endif %}
-            </div>
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p class="empty">No transactions recorded yet.</p>
-    {% endif %}
-  </section>
-
-  <section class="section" aria-labelledby="goal-heading">
-    <h2 id="goal-heading">Savings goal</h2>
-
-    <div class="card">
-      <div class="goal-head">
-        <h3>{{ goal.name }}</h3>
-        <span class="muted small">{{ goal.percent }}%</span>
-      </div>
-      <progress
-        class="progress"
-        value="{{ goal.saved_paise }}"
-        max="{{ goal.target_paise }}"
-        aria-label="{{ goal.name }} progress"
-      >{{ goal.percent }}%</progress>
-      <p class="muted small">{{ goal.saved_paise|inr }} of {{ goal.target_paise|inr }}</p>
-    </div>
-  </section>
+  {% if is_debug %}
+    <nav class="state-switcher" aria-label="Development state preview">
+      <span>Preview state:</span>
+      <a href="?state=ready" {% if page_state == "ready" %}aria-current="true"{% endif %}>Ready</a>
+      <a href="?state=empty" {% if page_state == "empty" %}aria-current="true"{% endif %}>Empty</a>
+      <a href="?state=loading" {% if page_state == "loading" %}aria-current="true"{% endif %}>Loading</a>
+      <a href="?state=error" {% if page_state == "error" %}aria-current="true"{% endif %}>Error</a>
+    </nav>
+  {% endif %}
 {% endblock %}

@@ -133,7 +133,3 @@ GOAL = SavingsGoal(
     saved_paise=850_000,
     target_paise=1_500_000,
 )
-
-
-def review_count() -> int:
-    return sum(1 for txn in TRANSACTIONS if txn.status == "needs_review")
