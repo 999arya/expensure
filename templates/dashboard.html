@@ -1,7 +1,19 @@
 {% extends "base.html" %}
 {% load money %}
+{% load static %}
 
 {% block title %}Overview · Finance{% endblock %}
+
+{% block head %}
+  <script>
+    document.documentElement.classList.add("js");
+    window.setTimeout(function () {
+      if (!window.__financeMotion) {
+        document.documentElement.classList.remove("js");
+      }
+    }, 1500);
+  </script>
+{% endblock %}
 
 {% block content %}
   <h1>Overview</h1>
@@ -31,11 +43,11 @@
 
   {% else %}
     {% if review_count == 1 %}
-      <div class="notice" role="status">
+      <div class="notice" role="status" data-animate="notice">
         <p>1 transaction needs review. It is not counted in your balance yet.</p>
       </div>
     {% elif review_count %}
-      <div class="notice" role="status">
+      <div class="notice" role="status" data-animate="notice">
         <p>{{ review_count }} transactions need review. They are not counted in your balance yet.</p>
       </div>
     {% endif %}
@@ -66,7 +78,7 @@
       {% if transactions %}
         <ul class="txn-list" role="list">
           {% for txn in transactions %}
-            <li class="txn">
+            <li class="txn" data-animate="txn">
               <div class="txn__main">
                 <p class="txn__desc">{{ txn.description }}</p>
                 <p class="muted small">{{ txn.occurred_at|date:"j M, g:i A" }} · {{ txn.category }}</p>
@@ -91,7 +103,7 @@
       <section class="section" aria-labelledby="goal-heading">
         <h2 id="goal-heading">Savings goal</h2>
 
-        <div class="card">
+        <div class="card" data-animate="goal">
           <div class="goal-head">
             <h3>{{ goal.name }}</h3>
             <span class="muted small">{{ goal.percent }}%</span>
@@ -101,6 +113,7 @@
             value="{{ goal.saved_paise }}"
             max="{{ goal.target_paise }}"
             aria-label="{{ goal.name }} progress"
+            data-progress
           >{{ goal.percent }}%</progress>
           <p class="muted small">{{ goal.saved_paise|inr }} of {{ goal.target_paise|inr }}</p>
         </div>
@@ -117,4 +130,9 @@
       <a href="?state=error" {% if page_state == "error" %}aria-current="true"{% endif %}>Error</a>
     </nav>
   {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'vendor/gsap/gsap.min.js' %}" defer></script>
+  <script src="{% static 'js/dashboard.js' %}" defer></script>
 {% endblock %}

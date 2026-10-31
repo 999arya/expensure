@@ -534,6 +534,12 @@ a {
    Motion
    ========================================================= */
 
+/* Only applied while the motion layer is expected to run. If GSAP fails,
+   the js class is removed and this rule stops hiding anything. */
+.js [data-animate] {
+  opacity: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -95,3 +95,11 @@ class DashboardStateTests(TestCase):
 
         self.assertContains(response, "Kotak Savings")
         self.assertNotContains(response, "Preview state:")
+
+
+class MotionAssetTests(TestCase):
+    def test_dashboard_loads_motion_assets(self):
+        response = self.client.get("/")
+
+        self.assertContains(response, "vendor/gsap/gsap.min.js")
+        self.assertContains(response, "js/dashboard.js")
