@@ -10,7 +10,7 @@
   <p class="amount">{{ account.balance_paise|inr }}</p>
 
   <dl class="meta">
-    <div><dt>Last confirmed</dt><dd>{{ account.confirmed_at|date:"j M, g:i A" }}</dd></div>
-    <div><dt>Last captured</dt><dd>{{ account.captured_at|date:"j M, g:i A" }}</dd></div>
+    <div><dt>Last confirmed</dt><dd>{% if account.confirmed_at %}{{ account.confirmed_at|date:"j M, g:i A" }}{% else %}—{% endif %}</dd></div>
+    <div><dt>Last captured</dt><dd>{% if account.captured_at %}{{ account.captured_at|date:"j M, g:i A" }}{% else %}—{% endif %}</dd></div>
   </dl>
 </article>

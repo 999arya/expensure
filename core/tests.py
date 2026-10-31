@@ -1,6 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
+
+from accounts.models import BalanceCheckpoint, BankAccount
+from ledger.models import Transaction
 
 from .formatting import format_inr
 
@@ -28,9 +32,28 @@ class FormatInrTests(SimpleTestCase):
             format_inr(100.5)
 
 
+def make_user(username="asha"):
+    return User.objects.create_user(username=username, password="test-pass-123")
+
+
+def make_account(owner, nickname="Kotak Savings", suffix="4821", balance=2_450_000):
+    account = BankAccount.objects.create(
+        owner=owner,
+        bank=BankAccount.Bank.KOTAK,
+        nickname=nickname,
+        account_suffix=suffix,
+    )
+    BalanceCheckpoint.objects.create(
+        account=account,
+        amount_paise=balance,
+        effective_at=timezone.now(),
+    )
+    return account
+
+
 class DashboardTests(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username="asha", password="test-pass-123")
+        self.user = make_user()
         self.client.force_login(self.user)
 
     def test_url_reverses_to_root(self):
@@ -50,22 +73,65 @@ class DashboardTests(TestCase):
         self.assertTemplateUsed(response, "dashboard.html")
         self.assertTemplateUsed(response, "base.html")
 
-    def test_dashboard_shows_accounts_and_goal(self):
+    def test_dashboard_shows_your_accounts_and_estimate(self):
+        make_account(self.user)
+
         response = self.client.get("/")
 
         self.assertContains(response, "Kotak Savings")
-        self.assertContains(response, "Bank of Baroda")
+        self.assertContains(response, "Kotak Mahindra Bank")
+        self.assertContains(response, "4821")
         self.assertContains(response, "₹24,500.00")
-        self.assertContains(response, "Emergency fund")
-        self.assertContains(response, "Needs review")
+
+    def test_dashboard_never_shows_another_users_account(self):
+        other = make_user("ravi")
+        make_account(other, nickname="Ravi private account", suffix="9999")
+
+        response = self.client.get("/")
+
+        self.assertNotContains(response, "Ravi private account")
+        self.assertContains(response, "No accounts yet.")
+
+    def test_empty_dashboard_invites_adding_an_account(self):
+        response = self.client.get("/")
+
+        self.assertContains(response, "No accounts yet.")
+        self.assertContains(response, "No transactions recorded yet.")
+        self.assertContains(response, reverse("accounts:add"))
+
+    def test_review_count_only_counts_your_transactions(self):
+        account = make_account(self.user)
+        other_account = make_account(make_user("ravi"), suffix="9999")
+        Transaction.objects.create(
+            account=account,
+            occurred_at=timezone.now(),
+            amount_paise=100,
+            direction=Transaction.Direction.DEBIT,
+            description="Mine",
+            status=Transaction.Status.NEEDS_REVIEW,
+        )
+        Transaction.objects.create(
+            account=other_account,
+            occurred_at=timezone.now(),
+            amount_paise=100,
+            direction=Transaction.Direction.DEBIT,
+            description="Theirs",
+            status=Transaction.Status.NEEDS_REVIEW,
+        )
+
+        response = self.client.get("/")
+
+        self.assertContains(response, "1 transaction needs review")
+        self.assertNotContains(response, "2 transactions need review")
 
 
 class DashboardStateTests(TestCase):
     """The ?state= preview only exists while DEBUG is on."""
 
     def setUp(self):
-        self.user = User.objects.create_user(username="asha", password="test-pass-123")
+        self.user = make_user()
         self.client.force_login(self.user)
+        make_account(self.user)
 
     @override_settings(DEBUG=True)
     def test_ready_state_shows_data_and_switcher(self):
@@ -117,7 +183,7 @@ class DashboardStateTests(TestCase):
 
 class MotionAssetTests(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username="asha", password="test-pass-123")
+        self.user = make_user()
         self.client.force_login(self.user)
 
     def test_dashboard_loads_motion_assets(self):

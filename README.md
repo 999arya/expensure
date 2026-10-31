@@ -8,9 +8,9 @@ and transaction capture is not guaranteed to be complete.
 
 ## Status
 
-Phase 2 in progress. Accounts, categories and transactions exist in the
-database, and the app has signup, login and logout. The dashboard still shows
-fictional data; it starts using your own accounts in the next step.
+Phase 2 in progress. Signup, login, logout, and adding an account with its
+starting balance all work, and the dashboard shows your own accounts with an
+estimated balance. Manual transaction entry is next.
 
 ## Requirements
 
@@ -53,7 +53,7 @@ same network. Set the environment variable fresh in each new terminal.
 
 ```
 config/            settings, root URLs, WSGI/ASGI entry points
-core/              dashboard view, demo data, formatting, tests
+core/              dashboard view, money parsing and formatting, tests
 accounts/          BankAccount, BalanceCheckpoint, signup/login/logout
 ledger/            Category, Transaction, starter categories
 templates/         base.html, dashboard.html, accounts/, partials/
@@ -73,7 +73,8 @@ Apps live at the repository root rather than under `apps/`.
    Anonymous visitors are sent to `/accounts/login/?next=/`.
 5. `accounts/views.py` handles signup: it creates the user and their starter
    categories in one transaction, then logs them in.
-6. `core/views.py` builds a context dictionary and calls `render()`.
+6. `core/views.py` asks `accounts/services.py` for the account cards, then
+   builds a context dictionary and calls `render()`.
 7. `templates/dashboard.html` extends `templates/base.html` and pulls styles
    from `static/css/app.css`.
 
@@ -84,10 +85,28 @@ Apps live at the repository root rather than under `apps/`.
 | `/accounts/signup/` | Create a user and 14 starter categories, then log in |
 | `/accounts/login/` | Log in; honours a safe `?next=` |
 | `/accounts/logout/` | Log out (POST only, as Django 5 requires) |
+| `/accounts/add/` | Add an account and the balance it shows today |
 
 Passwords go through Django's four validators (similarity, length, common
 password, all-numeric). The starter categories are seeded once per user and are
 safe to re-run.
+
+Adding an account stores the bank, a nickname, the account type and the last
+four digits. The full account number is never asked for. The balance you enter
+becomes the account's first checkpoint, so every later estimate has an anchor.
+
+## How the estimate is calculated
+
+```
+estimate = latest checkpoint amount
+         + posted credits after checkpoint.effective_at
+         − posted debits  after checkpoint.effective_at
+```
+
+A transaction exactly at the checkpoint time is treated as already included.
+Transactions marked `needs_review` are excluded until someone decides. The rule
+lives in `accounts/services.py` so the dashboard and later reports cannot drift
+apart.
 
 ## Development states
 

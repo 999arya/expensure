@@ -36,7 +36,7 @@
     </div>
   </section>
   <div class="motion-ribbon" aria-hidden="true"><div class="ribbon-track"><span>LESS GUESSWORK <b>✳</b> MORE PERSPECTIVE <b>↗</b> YOUR NEXT CHAPTER <b>✳</b> </span><span>LESS GUESSWORK <b>✳</b> MORE PERSPECTIVE <b>↗</b> YOUR NEXT CHAPTER <b>✳</b> </span></div></div>
-  <div class="overview-caption"><span>THE BIG PICTURE</span><p>Balances are estimates from your last confirmed balance plus the transactions recorded since then.</p><span class="demo-label">FICTIONAL DATA</span></div>
+  <div class="overview-caption"><span>THE BIG PICTURE</span><p>Balances are estimates from your last confirmed balance plus the transactions recorded since then.</p><span class="demo-label">PRIVATE TO YOU</span></div>
 
   {% if page_state == "error" %}
     <section class="state-panel" role="alert">
@@ -74,7 +74,10 @@
     <section class="section" aria-labelledby="accounts-heading">
       <div class="section-head">
         <h2 id="accounts-heading">Accounts</h2>
-        <span class="muted small">01 — Estimated balances</span>
+        <div class="section-head__side">
+          <span class="muted small">01 — Estimated balances</span>
+          <a class="text-link" href="{% url 'accounts:add' %}">Add account</a>
+        </div>
       </div>
 
       {% if accounts %}
@@ -84,7 +87,10 @@
           {% endfor %}
         </ul>
       {% else %}
-        <p class="empty">No accounts yet.</p>
+        <div class="empty">
+          <p>No accounts yet.</p>
+          <a class="button" href="{% url 'accounts:add' %}">Add account</a>
+        </div>
       {% endif %}
     </section>
 
