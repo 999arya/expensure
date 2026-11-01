@@ -8,9 +8,9 @@ and transaction capture is not guaranteed to be complete.
 
 ## Status
 
-Phase 3 in progress: confirming a balance over time works, and transactions
-that fall before the last confirmed balance wait in a review queue for your
-decision. Pairing transfers across your own accounts is next.
+Phase 3 is complete: balances are estimated from confirmed checkpoints, late
+movements wait in a review queue, and transfers pair two legs across your own
+accounts. Phase 4 adds goals and a spending allowance.
 
 ## Requirements
 
@@ -130,6 +130,8 @@ future is rejected, because a balance cannot be known before it exists.
 | `/transactions/` | Your transactions, newest first, 50 per page |
 | `/transactions/add/` | Record one movement by hand |
 | `/transactions/review/` | Movements waiting for your review decision |
+| `/transactions/transfers/` | Transfers between your own accounts |
+| `/transactions/transfers/add/` | Move money between two accounts you own |
 
 Amounts are typed as text, so `1,23,456.78` and `1234.5` both work and become
 exact integer paise. A transaction is posted the moment you save it, because you
@@ -157,6 +159,22 @@ as `needs_review` and waits for your decision at `/transactions/review/`:
 
 The dashboard shows how many transactions are waiting and links straight to
 the queue.
+
+### Transfers
+
+A transfer records a debit on one account and a credit on another account you
+own, in one atomic step. Both legs are linked, so reports never treat the
+movement as income or spending.
+
+Each leg gets the review status its own account implies: the sending bank and
+the receiving bank can learn about the movement at different times, so one leg
+can be posted while the other waits.
+
+If a leg is ever removed, the transfer is shown as unresolved. A credit marked
+with the **Transfer** category but with no matching leg is listed under
+**Unpaired transfer credits** and is never counted as income. Moving money
+between your own accounts cannot make you richer, and a missing leg is far more
+likely a capture gap than a gift.
 
 ## Development states
 
@@ -186,9 +204,9 @@ See `docs/decisions.md` for the money, checkpoint, refund and transfer rules.
 | Phase | Scope | Status |
 | --- | --- | --- |
 | 1 | Dashboard, layout, states, motion | Done |
-| 2 | Accounts, auth, manual transactions | In progress |
-| 3 | Estimated balances, corrections, transfers | Planned |
-| 4 | Goals and spending allowance | Planned |
+| 2 | Accounts, auth, manual transactions | Done |
+| 3 | Estimated balances, corrections, transfers | Done |
+| 4 | Goals and spending allowance | In progress |
 | 5 | Monthly reports and CSV | Planned |
 | 6 | SMS parsing, then iPhone capture | Planned |
 | 7 | AI coach | Planned |

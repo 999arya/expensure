@@ -73,11 +73,22 @@
       </div>
     {% endif %}
 
+    {% if unresolved_count %}
+      <div class="notice" role="status" data-animate="notice">
+        <p>
+          {{ unresolved_count }} transfer{{ unresolved_count|pluralize }} unresolved.
+          An unpaired credit is not counted as income.
+        </p>
+        <a class="button button--outline" href="{% url 'ledger:transfers' %}">Review transfers</a>
+      </div>
+    {% endif %}
+
     <section class="section" aria-labelledby="accounts-heading">
       <div class="section-head">
         <h2 id="accounts-heading">Accounts</h2>
         <div class="section-head__side">
           <span class="muted small">01 — Estimated balances</span>
+          <a class="text-link" href="{% url 'ledger:transfers' %}">Transfers</a>
           <a class="text-link" href="{% url 'accounts:add' %}">Add account</a>
         </div>
       </div>

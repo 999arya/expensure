@@ -13,4 +13,6 @@ urlpatterns = [
         views.review_decide,
         name="review_decide",
     ),
+    path("transfers/", views.transfer_list_view, name="transfers"),
+    path("transfers/add/", views.AddTransferView.as_view(), name="transfer_add"),
 ]

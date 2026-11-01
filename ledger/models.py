@@ -98,6 +98,14 @@ class Transaction(models.Model):
         blank=True,
         help_text="Stable bank reference when one exists. Empty means unknown.",
     )
+    transfer = models.ForeignKey(
+        "ledger.Transfer",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="legs",
+        help_text="Set when this movement is one leg of a transfer.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -131,3 +139,54 @@ class Transaction(models.Model):
             return None
         # Meta ordering is -effective_at, -id, so the first is the latest.
         return checkpoints[0]
+
+
+class Transfer(models.Model):
+    """Money moved between two accounts the same person owns.
+
+    A transfer owns two transaction legs: a debit on `from_account` and a
+    credit on `to_account`. Keeping the pair together is what lets reports
+    leave it out of income and spending. If a leg is ever deleted, the pair is
+    unresolved and the remaining leg is never treated as income.
+    """
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="transfers",
+    )
+    from_account = models.ForeignKey(
+        "accounts.BankAccount",
+        on_delete=models.CASCADE,
+        related_name="outgoing_transfers",
+    )
+    to_account = models.ForeignKey(
+        "accounts.BankAccount",
+        on_delete=models.CASCADE,
+        related_name="incoming_transfers",
+    )
+    amount_paise = models.BigIntegerField()
+    occurred_at = models.DateTimeField()
+    description = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-occurred_at", "-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(amount_paise__gt=0),
+                name="transfer_amount_positive",
+            )
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.from_account.nickname} → {self.to_account.nickname} "
+            f"· {self.amount_paise} paise"
+        )
+
+    @property
+    def is_resolved(self):
+        """True when both legs still exist."""
+        return self.legs.count() >= 2
+

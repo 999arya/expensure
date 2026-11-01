@@ -1,22 +1,15 @@
-"""Reviewing movements that fall before the last confirmed balance.
+"""Rules shared by manual entry, transfers and later capture.
 
-When a transaction is dated at or before the account's newest confirmed
-checkpoint, the bank may already have included it in that figure. Rather than
-guess, the app saves it as ``needs_review`` and waits for a decision:
-
-- **"Already included"** → ``posted``. The estimate is unchanged: the time rule
-  already treats the movement as inside the checkpoint.
-- **"Ignore"** → ``ignored``. Excluded from the estimate and from reports,
-  kept visible with a muted chip so it can be undone later.
-- **"Not included"** → no server action. The honest fix is to confirm the
-  current balance for that account, which re-anchors the estimate from now.
-
-The status decision rule lives here so manual entry (Phase 3) and later SMS
-capture (Phase 6) flag movements identically.
+The review-queue rule lives here so manual entry (Phase 3) and SMS capture
+(Phase 6) flag movements identically. Transfers also live here, because a
+paired movement must be created atomically: half a transfer is worse than none.
 """
 
+from django.db import transaction as db_transaction
+from django.db.models import Count
+
 from accounts.services import latest_checkpoint
-from ledger.models import Transaction
+from ledger.models import Category, Transaction, Transfer
 
 
 def status_for_transaction(account, occurred_at):
@@ -71,3 +64,93 @@ def review_count(user):
     return Transaction.objects.filter(
         account__owner=user, status=Transaction.Status.NEEDS_REVIEW
     ).count()
+
+
+def create_transfer(owner, from_account, to_account, amount_paise, occurred_at, description=""):
+    """Create a transfer and its two legs in one atomic step.
+
+    Both accounts must belong to `owner` and must differ. The debit leg leaves
+    `from_account`; the credit leg arrives in `to_account`. Each leg gets the
+    review status its own account's checkpoint implies, because the two banks
+    can know about the movement at different times.
+    """
+    if from_account.owner_id != owner.pk or to_account.owner_id != owner.pk:
+        raise ValueError("Both accounts must belong to you.")
+    if from_account.pk == to_account.pk:
+        raise ValueError("Choose two different accounts.")
+    if amount_paise <= 0:
+        raise ValueError("A transfer must be more than zero.")
+
+    with db_transaction.atomic():
+        transfer = Transfer.objects.create(
+            owner=owner,
+            from_account=from_account,
+            to_account=to_account,
+            amount_paise=amount_paise,
+            occurred_at=occurred_at,
+            description=description,
+        )
+        note = description or "Transfer"
+        Transaction.objects.create(
+            account=from_account,
+            occurred_at=occurred_at,
+            amount_paise=amount_paise,
+            direction=Transaction.Direction.DEBIT,
+            description=f"{note} → {to_account.nickname}",
+            status=status_for_transaction(from_account, occurred_at),
+            transfer=transfer,
+        )
+        Transaction.objects.create(
+            account=to_account,
+            occurred_at=occurred_at,
+            amount_paise=amount_paise,
+            direction=Transaction.Direction.CREDIT,
+            description=f"{note} ← {from_account.nickname}",
+            status=status_for_transaction(to_account, occurred_at),
+            transfer=transfer,
+        )
+
+    return transfer
+
+
+def transfer_list(user):
+    """The user's transfers, newest first, with both legs loaded."""
+    return (
+        Transfer.objects.filter(owner=user)
+        .select_related("from_account", "to_account")
+        .prefetch_related("legs")
+        .annotate(leg_count=Count("legs"))
+        .order_by("-occurred_at", "-id")
+    )
+
+
+def unresolved_transfers(user):
+    """Transfers that lost a leg, and transfer-labelled credits with no pair.
+
+    Both are excluded from income. A missing leg is far more likely a capture
+    gap than a gift, so the app asks rather than counting it.
+    """
+    broken = (
+        Transfer.objects.filter(owner=user)
+        .annotate(leg_count=Count("legs"))
+        .filter(leg_count__lt=2)
+        .select_related("from_account", "to_account")
+    )
+    loose = (
+        Transaction.objects.filter(
+            account__owner=user,
+            transfer__isnull=True,
+            category__kind=Category.Kind.TRANSFER,
+            direction=Transaction.Direction.CREDIT,
+            status=Transaction.Status.POSTED,
+        )
+        .select_related("account", "category")
+        .order_by("-occurred_at", "-id")
+    )
+    return broken, loose
+
+
+def unresolved_transfer_count(user):
+    broken, loose = unresolved_transfers(user)
+    return broken.count() + loose.count()
+

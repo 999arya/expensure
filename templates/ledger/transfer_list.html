@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load money %}
+
+{% block title %}Transfers · Expensure{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">BETWEEN YOUR ACCOUNTS</p>
+      <h1>Transfers</h1>
+    </div>
+    <a class="button" href="{% url 'ledger:transfer_add' %}">Add transfer</a>
+  </header>
+
+  <p class="muted small">
+    Moving money between your own accounts is never income or spending. Each
+    transfer records two legs: one debit and one credit.
+  </p>
+
+  {% if unresolved_count %}
+    <div class="notice" role="status">
+      <p>
+        {{ unresolved_count }} transfer{{ unresolved_count|pluralize }} unresolved.
+        Unpaired credits are not counted as income.
+      </p>
+    </div>
+  {% endif %}
+
+  {% if transfers %}
+    <ul class="txn-list" role="list">
+      {% for transfer in transfers %}
+        <li class="txn" data-animate="txn">
+          <span class="txn-icon" aria-hidden="true">⇄</span>
+          <div class="txn__main">
+            <p class="txn__desc">
+              {{ transfer.from_account.nickname }} → {{ transfer.to_account.nickname }}
+            </p>
+            <p class="muted small">
+              {{ transfer.occurred_at|date:"j M, g:i A" }}
+              {% if transfer.description %} · {{ transfer.description }}{% endif %}
+            </p>
+            {% if transfer.leg_count < 2 %}
+              <span class="chip chip--warn">Unresolved — one leg is missing</span>
+            {% endif %}
+          </div>
+          <div class="txn__side">
+            <p class="txn__amount">{{ transfer.amount_paise|inr }}</p>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="empty">
+      <p>No transfers yet.</p>
+      <p class="muted small">
+        Use a transfer when money moves between two accounts you own.
+      </p>
+      <a class="button" href="{% url 'ledger:transfer_add' %}">Add transfer</a>
+    </div>
+  {% endif %}
+
+  {% if loose_credits %}
+    <section class="section" aria-labelledby="loose-heading">
+      <div class="section-head">
+        <h2 id="loose-heading">Unpaired transfer credits</h2>
+        <span class="muted small">Not counted as income</span>
+      </div>
+      <p class="muted small">
+        These credits are marked as transfers but have no matching outgoing
+        leg. If money really arrived from outside, change the category.
+      </p>
+      <ul class="txn-list" role="list">
+        {% for txn in loose_credits %}
+          <li class="txn">
+            <span class="txn-icon txn-icon--credit" aria-hidden="true">↙</span>
+            <div class="txn__main">
+              <p class="txn__desc">{{ txn.description }}</p>
+              <p class="muted small">
+                {{ txn.occurred_at|date:"j M, g:i A" }} · {{ txn.account.nickname }}
+              </p>
+            </div>
+            <div class="txn__side">
+              <p class="txn__amount is-credit">+{{ txn.amount_paise|inr }}</p>
+              <span class="chip chip--warn">Unpaired</span>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+{% endblock %}

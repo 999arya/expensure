@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Category, Transaction
+from .models import Category, Transaction, Transfer
 
 
 @admin.register(Category)
@@ -25,3 +25,11 @@ class TransactionAdmin(admin.ModelAdmin):
     search_fields = ("description", "reference", "account__nickname")
     date_hierarchy = "occurred_at"
     raw_id_fields = ("account", "category")
+
+
+@admin.register(Transfer)
+class TransferAdmin(admin.ModelAdmin):
+    list_display = ("from_account", "to_account", "amount_paise", "occurred_at")
+    search_fields = ("description", "from_account__nickname", "to_account__nickname")
+    date_hierarchy = "occurred_at"
+    raw_id_fields = ("from_account", "to_account")

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Add transfer · Expensure{% endblock %}
+
+{% block content %}
+  <section class="auth" aria-labelledby="auth-title">
+    <div class="auth-card">
+      <p class="eyebrow">BETWEEN YOUR ACCOUNTS</p>
+      <h1 id="auth-title">Add transfer</h1>
+      <p class="muted">
+        Move money between two accounts you own. Both legs are recorded
+        together, so the movement is never counted as income or spending.
+      </p>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="form-errors" role="alert">
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+          </div>
+        {% endif %}
+
+        {% for field in form %}
+          {% include "partials/form_field.html" with field=field %}
+        {% endfor %}
+
+        <button class="button button--full" type="submit">Save transfer</button>
+      </form>
+
+      <p class="auth-switch">
+        <a href="{% url 'ledger:transfers' %}">Cancel</a>
+      </p>
+    </div>
+  </section>
+{% endblock %}

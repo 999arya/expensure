@@ -13,6 +13,7 @@
     {% if review_count %}
       <a class="text-link" href="{% url 'ledger:review' %}">{{ review_count }} review{{ review_count|pluralize }} waiting</a>
     {% endif %}
+    <a class="text-link" href="{% url 'ledger:transfers' %}">Transfers</a>
   </header>
 
   {% if filters.errors %}

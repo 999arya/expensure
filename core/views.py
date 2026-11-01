@@ -4,6 +4,7 @@ from django.shortcuts import render
 
 from accounts.services import account_cards
 from ledger.models import Transaction
+from ledger.services import unresolved_transfer_count
 
 # Development-only preview states. Ignored entirely when DEBUG is off.
 STATES = ("ready", "empty", "loading", "error")
@@ -28,17 +29,20 @@ def dashboard(request):
         account__owner=request.user,
         status=Transaction.Status.NEEDS_REVIEW,
     ).count()
+    unresolved_count = unresolved_transfer_count(request.user)
 
     if page_state == "empty":
         accounts = []
         transactions = []
         review_count = 0
+        unresolved_count = 0
 
     context = {
         "accounts": accounts,
         "transactions": transactions,
         "goal": None,
         "review_count": review_count,
+        "unresolved_count": unresolved_count,
         "page_state": page_state,
         "is_debug": settings.DEBUG,
     }

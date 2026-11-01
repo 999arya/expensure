@@ -97,9 +97,10 @@ allowance unchanged.
 
 ## 005 — Transfers and adjustments never count as income or spending
 
-**Status:** accepted (implementation in Phase 3)
+**Status:** accepted (Phase 3)
+
 Own-account transfers, opening balances, balance corrections and unresolved
-credits are excluded from net savings. A transfer needs both legs confirmed; a
+credits are excluded from net savings. A transfer records both legs together; a
 single unmatched leg stays `unresolved` and is never treated as income.
 
 **Why:** moving money between your own accounts does not make you richer, and a
@@ -108,7 +109,9 @@ missing leg is more likely a capture gap than a gift.
 **Cost:** the user has to pair transfers, or accept an unresolved item on the
 dashboard.
 
-**Tested by:** Phase 3 transfer tests, including a one-legged transfer.
+**Tested by:** `ledger/test_transfers.py`, including a one-legged transfer, a
+tampered POST with someone else's account, and a transfer where only one leg
+falls before that account's checkpoint.
 
 ---
 

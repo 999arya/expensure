@@ -5,14 +5,21 @@ from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
-from django.views.generic import CreateView
+from django.views.generic import CreateView, FormView
 
 from accounts.models import BankAccount
 
 from .filters import apply_filters, read_filters
-from .forms import TransactionForm
+from .forms import TransactionForm, TransferForm
 from .models import Transaction
-from .services import apply_review_decision, conflict_checkpoint, review_count, reviewable
+from .services import (
+    apply_review_decision,
+    conflict_checkpoint,
+    review_count,
+    reviewable,
+    transfer_list,
+    unresolved_transfers,
+)
 
 REVIEW_APPROVE_MESSAGE = "Marked as already included in that balance."
 REVIEW_IGNORE_MESSAGE = "Ignored. It stays out of your balance and reports."
@@ -118,3 +125,51 @@ def review_decide(request, pk):
         messages.success(request, REVIEW_IGNORE_MESSAGE)
 
     return redirect("ledger:review")
+
+
+@login_required
+def transfer_list_view(request):
+    """Every transfer you recorded, plus anything unresolved."""
+    transfers = transfer_list(request.user)
+    broken, loose = unresolved_transfers(request.user)
+
+    context = {
+        "transfers": transfers,
+        "broken_transfers": broken,
+        "loose_credits": loose,
+        "unresolved_count": broken.count() + loose.count(),
+    }
+    return render(request, "ledger/transfer_list.html", context)
+
+
+class AddTransferView(LoginRequiredMixin, FormView):
+    """Move money between two of your own accounts."""
+
+    form_class = TransferForm
+    template_name = "ledger/add_transfer.html"
+    success_url = reverse_lazy("ledger:transfers")
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            active = BankAccount.objects.filter(owner=request.user, is_active=True)
+            if active.count() < 2:
+                messages.info(
+                    request,
+                    "A transfer needs two accounts. Add another account first.",
+                )
+                return redirect("accounts:add")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["owner"] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        form.save()
+        messages.success(
+            self.request,
+            "Transfer recorded. It moves money between your own accounts, "
+            "so it is not income or spending.",
+        )
+        return super().form_valid(form)
