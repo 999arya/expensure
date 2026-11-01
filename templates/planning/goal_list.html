@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load money %}
+
+{% block title %}Goals · Expensure{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">MONEY SET ASIDE</p>
+      <h1>Goals</h1>
+    </div>
+    <div class="page-head__actions">
+      <a class="button" href="{% url 'planning:goal_add' %}">Add goal</a>
+      <a class="text-link" href="{% url 'planning:plan' %}">Back to plan</a>
+    </div>
+  </header>
+
+  {% if open_goals %}
+    <ul class="goal-list" role="list">
+      {% for goal in open_goals %}
+        <li class="card goal-card" data-animate="goal">
+          <div class="goal-head">
+            <h2>{{ goal.name }}</h2>
+            <span class="muted small">{{ goal.percent }}%</span>
+          </div>
+          <progress
+            class="progress"
+            value="{{ goal.saved_paise }}"
+            max="{{ goal.target_paise }}"
+            aria-label="{{ goal.name }} progress"
+            data-progress
+          >{{ goal.percent }}%</progress>
+          <p class="muted small">
+            {{ goal.saved_paise|inr }} of {{ goal.target_paise|inr }}
+            {% if goal.target_date %} · by {{ goal.target_date|date:"j M Y" }}{% endif %}
+          </p>
+          <p class="muted small">
+            {{ goal.remaining_paise|inr }} to go.
+          </p>
+
+          <div class="goal-card__actions">
+            <form method="post" action="{% url 'planning:goal_contribute' goal.pk %}" class="goal-contribute">
+              {% csrf_token %}
+              <div class="field">
+                <label for="amount-{{ goal.pk }}">Add to this goal</label>
+                <input
+                  type="text"
+                  inputmode="decimal"
+                  autocomplete="off"
+                  placeholder="0.00"
+                  name="amount"
+                  id="amount-{{ goal.pk }}"
+                  required
+                >
+              </div>
+              <button class="button" type="submit">Add</button>
+            </form>
+            <a class="text-link" href="{% url 'planning:goal_edit' goal.pk %}">Edit goal</a>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% elif completed_goals %}
+    <div class="empty">
+      <p>Every goal is complete.</p>
+      <p class="muted small">Add a new one when you are ready for the next thing.</p>
+      <a class="button" href="{% url 'planning:goal_add' %}">Add goal</a>
+    </div>
+  {% else %}
+    <div class="empty">
+      <p>No goals yet.</p>
+      <p class="muted small">
+        Name what you are saving for, set a target, and add to it whenever you
+        set money aside.
+      </p>
+      <a class="button" href="{% url 'planning:goal_add' %}">Add goal</a>
+    </div>
+  {% endif %}
+
+  {% if completed_goals %}
+    <section class="section" aria-labelledby="completed-heading">
+      <div class="section-head">
+        <h2 id="completed-heading">Complete</h2>
+        <span class="muted small">Reached the target</span>
+      </div>
+      <ul class="goal-list" role="list">
+        {% for goal in completed_goals %}
+          <li class="card goal-card goal-card--complete">
+            <div class="goal-head">
+              <h2>{{ goal.name }}</h2>
+              <span class="chip">Complete</span>
+            </div>
+            <p class="muted small">
+              {{ goal.saved_paise|inr }} of {{ goal.target_paise|inr }}
+              {% if goal.target_date %} · by {{ goal.target_date|date:"j M Y" }}{% endif %}
+            </p>
+            <a class="text-link" href="{% url 'planning:goal_edit' goal.pk %}">Edit goal</a>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+{% endblock %}

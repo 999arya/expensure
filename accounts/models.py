@@ -23,7 +23,7 @@ class BankAccount(models.Model):
         on_delete=models.CASCADE,
         related_name="bank_accounts",
     )
-    bank = models.CharField(max_length=16, choices=Bank.choices)
+    bank = models.CharField(max_length=100)
     nickname = models.CharField(max_length=64)
     account_suffix = models.CharField(
         max_length=4,
@@ -47,6 +47,10 @@ class BankAccount(models.Model):
                 name="unique_account_per_owner",
             )
         ]
+
+    def get_bank_display(self):
+        # Preserve labels for existing accounts stored with legacy bank codes.
+        return dict(self.Bank.choices).get(self.bank, self.bank)
 
     def __str__(self):
         return f"{self.nickname} ····{self.account_suffix}"

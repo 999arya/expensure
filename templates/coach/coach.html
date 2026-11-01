@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% load money %}
+
+{% block title %}AI Financial Coach · Expensure{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">INTELLIGENT INSIGHTS</p>
+      <h1>Financial Coach</h1>
+      <p class="muted">
+        Rule-triggered suggestions and affordability calculations based on your confirmed balances and goals.
+      </p>
+    </div>
+  </header>
+
+  <section class="section" aria-labelledby="your-goals-heading">
+    <h2 id="your-goals-heading">Your goals, your next steps</h2>
+    {% for goal in goals %}<div class="card next-step"><div><h3>{{ goal.name }}</h3><p class="muted">{{ goal.saved_paise|inr }} of {{ goal.target_paise|inr }}</p></div><a class="button button--outline" href="{% url 'coach:goal_plan' goal.pk %}">See next steps</a></div>
+    {% empty %}<p class="muted">Choose a goal to get a practical action plan.</p><a class="button" href="{% url 'planning:goal_add' %}">Set your first goal</a>{% endfor %}
+  </section>
+  <!-- "Can I afford ₹..." Query Box -->
+  <section class="section" aria-labelledby="afford-heading">
+    <div class="card" style="border-left: 4px solid var(--accent); margin-bottom: var(--space-5);">
+      <h2 id="afford-heading" style="margin-top: 0;">Can I afford this purchase?</h2>
+      <p class="muted small">
+        Calculate the exact mathematical consequences before making a discretionary purchase.
+        Checks cash on hand, protected savings floor, upcoming bills, and daily allowance impact.
+      </p>
+
+      <form method="post" action="{% url 'coach:afford' %}" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
+        {% csrf_token %}
+        <div style="flex: 1; min-width: 220px; position: relative;">
+          <input
+            type="text"
+            name="amount"
+            placeholder="e.g. 4,000"
+            required
+            style="width: 100%; padding: 0.65rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--surface); color: var(--text); font-size: 1.1rem; font-weight: 500;"
+          >
+        </div>
+        <label class="small" style="flex-basis:100%"><input type="checkbox" name="ai_consent"> Use optional Groq AI explanations. Send only calculated totals and coverage dates; no names or SMS. Leaving this off uses local calculations.</label>
+        <button class="button" type="submit">Check affordability</button>
+      </form>
+      <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
+        <span class="muted small">Quick try:</span>
+        <button type="button" class="link-button small" onclick="document.getElementsByName('amount')[0].value='1,500'">₹1,500</button>
+        <button type="button" class="link-button small" onclick="document.getElementsByName('amount')[0].value='4,000'">₹4,000</button>
+        <button type="button" class="link-button small" onclick="document.getElementsByName('amount')[0].value='15,000'">₹15,000</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Active Suggestions & Insights -->
+  <section class="section" aria-labelledby="insights-heading">
+    <div class="section-head">
+      <h2 id="insights-heading">Active suggestions</h2>
+      <span class="muted small">ACCEPT OR DISMISS</span>
+    </div>
+
+    {% if insights %}
+      <div class="card-grid" style="margin-bottom: var(--space-5);">
+        {% for ins in insights %}
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <h3 style="margin: 0;">{{ ins.title }}</h3>
+              <span class="chip" style="font-size: 0.75rem;">{{ ins.get_source_display }}</span>
+            </div>
+            <p style="margin: 0.75rem 0 0.5rem; line-height: 1.5;">{{ ins.body }}</p>
+
+            <div style="font-size: 0.85rem; background: var(--bg); padding: 0.75rem; border-radius: var(--radius-sm); margin: 0.75rem 0;">
+              <strong>Reason:</strong> {{ ins.reason }}
+              {% if ins.assumptions %}
+                <br><span class="muted"><strong>Assumptions:</strong> {{ ins.assumptions }}</span>
+              {% endif %}
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+              <form method="post" action="{% url 'coach:insight_accept' ins.pk %}">
+                {% csrf_token %}
+                <button class="button button--small" type="submit">Accept suggestion</button>
+              </form>
+              <form method="post" action="{% url 'coach:insight_dismiss' ins.pk %}">
+                {% csrf_token %}
+                <button class="button button--small button--outline" type="submit">Dismiss</button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="card empty-state" style="margin-bottom: var(--space-5);">
+        <p class="muted">No pending suggestions. Run a purchase check or wait for the next daily summary; this does not establish that your plan is balanced.</p>
+      </div>
+    {% endif %}
+  </section>
+
+  <!-- Privacy & AI Explanation -->
+  <section class="section">
+    <div class="card" style="font-size: 0.85rem; color: var(--muted); border: 1px dashed var(--line);">
+      <h4 style="margin: 0 0 0.25rem; color: var(--text);">How Expensure's AI Coach works</h4>
+      <p style="margin: 0 0 0.5rem;">
+        Financial rules and allowance equations are calculated in Python first. The AI receives only compact numerical summaries
+        without personal identifiers or full account numbers.
+      </p>
+      <ul style="padding-left: 1.25rem; margin: 0; line-height: 1.6;">
+        <li>Does not connect directly to banks or read raw message text.</li>
+        <li>Never moves money, changes account balances, or silently alters goals.</li>
+        <li>Calculations work on the server without an AI key. AI can select verified explanations; the Python result always controls the verdict.</li>
+      </ul>
+    </div>
+  </section>
+{% endblock %}

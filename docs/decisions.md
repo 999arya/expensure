@@ -20,8 +20,8 @@ across thousands of transactions. Integer paise makes every sum exact.
 **Cost:** every display path must format explicitly, and division (splitting a
 bill, for example) has to define a rounding rule.
 
-**Tested by:** `FormatInrTests` in `core/tests.py`, `ParseInrTests` in
-`core/test_parsing.py`, and the database check constraint
+**Tested by:** `FormatInrTests` in `core/tests/test_features.py`, `ParseInrTests` in
+`core/tests/test_parsing.py`, and the database check constraint
 `txn_amount_positive` on `ledger.Transaction`.
 
 ---
@@ -49,7 +49,7 @@ Guessing produces balances that are wrong in a direction the user cannot see.
 **Cost:** some transactions sit in review until the user decides. That is the
 correct trade: a visible question beats a silent error.
 
-**Tested by:** `EstimateBalanceTests` in `accounts/test_services.py`, including a
+**Tested by:** `EstimateBalanceTests` in `accounts/tests/test_services.py`, including a
 checkpoint of ₹10,000 with a ₹500 debit and a ₹2,000 credit giving ₹11,500, and
 transactions exactly at or before the checkpoint not being counted twice.
 
@@ -70,14 +70,14 @@ accurate but requires the original to still exist and be identifiable.
 **Cost:** a refund for a purchase made in a previous month distorts both months
 slightly. The separate line makes that visible instead of hiding it.
 
-**Revisit:** when a reliable link between refund and original transaction
-exists (Phase 3), switch to attributing the refund to the original month.
+**Revisit:** after monthly reports (Phase 5), if a refund from a previous month
+distorts month totals in practice.
 
 ---
 
 ## 004 — Confirmed future income and unpaid bills never double-count
 
-**Status:** accepted (implementation in Phase 4)
+**Status:** accepted (Phase 4)
 
 `R` (remaining confirmed income) excludes anything already posted into `C`.
 `U` (expected bills) excludes anything already paid and linked to a transaction.
@@ -89,9 +89,10 @@ inflated.
 **Cost:** every planned cash-flow item needs a link to the transaction that
 settles it.
 
-**Tested by:** a table of cases in Phase 4, including a bill paid after the
-plan was made: paying ₹1,000 must reduce both `C` and `U`, leaving the
-allowance unchanged.
+**Tested by:** `SettleBillTests` and `SettleIncomeTests` in `planning/tests/test_features.py`,
+including a bill paid after the plan was made: paying ₹1,000 lowers both `C` and
+`U` and leaves the allowance unchanged. The same tests cover a backdated
+settlement waiting for review and a tampered POST against another user's item.
 
 ---
 
@@ -109,7 +110,7 @@ missing leg is more likely a capture gap than a gift.
 **Cost:** the user has to pair transfers, or accept an unresolved item on the
 dashboard.
 
-**Tested by:** `ledger/test_transfers.py`, including a one-legged transfer, a
+**Tested by:** `ledger/tests/test_transfers.py`, including a one-legged transfer, a
 tampered POST with someone else's account, and a transfer where only one leg
 falls before that account's checkpoint.
 
@@ -156,6 +157,6 @@ cannot see. A visible question beats a silent error.
 **Cost:** some transactions sit in review until the user decides.
 
 **Tested by:** `StatusRuleTests`, `ReviewPageTests` and `ReviewDecideTests` in
-`ledger/test_review.py`, plus the add-transaction flagging tests in
-`ledger/test_transactions.py` and the live two-width browser check of the
+`ledger/tests/test_review.py`, plus the add-transaction flagging tests in
+`ledger/tests/test_transactions.py` and the live two-width browser check of the
 review flow.

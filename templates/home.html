@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Expensure &middot; Make room for your future{% endblock %}
+{% block navigation %}{% endblock %}
+{% block content %}
+<section class="landing-hero" aria-labelledby="home-title">
+  <div><p class="eyebrow">YOUR MONEY. YOUR NEXT CHAPTER.</p>
+    <h1 id="home-title">A clearer today.<br><em>A closer tomorrow.</em></h1>
+    <p class="muted landing-copy">Bring your accounts together, choose what you are saving for, and turn your goals into steps you can take.</p>
+    <div class="landing-actions">{% if user.is_authenticated %}<a class="button" href="{% url 'core:dashboard' %}">Open your dashboard</a>{% else %}<a class="button" href="{% url 'accounts:signup' %}">Create your account</a><a class="button button--outline" href="{% url 'accounts:login' %}">Log in</a>{% endif %}</div>
+    <p class="small muted">Your records, your control. No live bank connection.</p>
+  </div>
+  <aside class="card landing-preview" aria-label="How your journey works">
+    <p class="eyebrow">FROM A PLAN TO PROGRESS</p><h2>Your future starts<br>with one goal.</h2>
+    <ol><li><strong>Make it personal</strong><p>Add your details and first account at signup.</p></li><li><strong>Give your money a purpose</strong><p>Choose a target and a date that matter to you.</p></li><li><strong>Take the next step</strong><p>Get a calculated savings pace and optional AI guidance.</p></li></ol>
+  </aside>
+</section>
+<section class="landing-features" aria-label="Built for everyday progress">
+  <article class="card"><p class="eyebrow">01 / SEE CLEARLY</p><h2>Know where you stand.</h2><p class="muted">Track estimated balances, everyday spending, and upcoming bills in one dashboard.</p></article>
+  <article class="card"><p class="eyebrow">02 / SET YOUR DIRECTION</p><h2>Start with what matters.</h2><p class="muted">An emergency fund, a new laptop, or your next trip. Set a goal when you are ready.</p></article>
+  <article class="card"><p class="eyebrow">03 / KEEP GOING</p><h2>A little guidance helps.</h2><p class="muted">Review steps based on your recorded finances. You choose what to do next.</p></article>
+</section>
+{% endblock %}

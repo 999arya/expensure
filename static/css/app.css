@@ -1288,3 +1288,188 @@ html { scroll-padding-top: 110px; }
 .brand-logo { display: block; width: 190px; height: auto; flex: none; color: #f5eee7; }
 [data-theme='light'] .brand-logo { color: #0b0b0b; }
 @media (max-width: 600px) { .brand-logo { width: 150px; } }
+
+/* =========================================================
+   Planning: allowance, goals, planned items
+   ========================================================= */
+
+.page-head__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.allowance {
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.allowance--compact {
+  background: var(--accent-soft);
+}
+
+.allowance__amount {
+  margin: var(--space-1) 0 var(--space-2);
+  font-size: clamp(1.8rem, 7vw, 2.6rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.allowance__amount.is-negative {
+  color: #d1685a;
+}
+
+.allowance__breakdown {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.allowance__breakdown > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.allowance__breakdown dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.allowance__breakdown dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: right;
+}
+
+.allowance__note {
+  margin: var(--space-3) 0 0;
+}
+
+.plan-list,
+.goal-list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.plan-item__main {
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+
+.plan-item__desc {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.plan-item__main .small {
+  margin: var(--space-1) 0 0;
+}
+
+.plan-item__side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.plan-item__amount {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.plan-item__amount.is-credit {
+  color: #6fae4f;
+}
+
+.plan-item__amount.is-debit {
+  color: #d1685a;
+}
+
+.plan-item__side form {
+  margin: 0;
+}
+
+.plan-item__side .button {
+  min-height: 38px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+}
+
+.goal-card h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.goal-card .progress {
+  margin: var(--space-3) 0 var(--space-2);
+}
+
+.goal-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.goal-contribute {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.goal-contribute .field {
+  margin-top: 0;
+  flex: 1 1 9rem;
+  min-width: 0;
+}
+
+.goal-contribute .field input {
+  min-height: 44px;
+}
+
+.goal-card--complete {
+  opacity: 0.85;
+}
+
+@media (max-width: 380px) {
+  .plan-item__side {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

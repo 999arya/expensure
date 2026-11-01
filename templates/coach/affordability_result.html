@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load money %}
+
+{% block title %}Affordability Result · Expensure{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">AFFORDABILITY BREAKDOWN</p>
+      <h1>{{ coach_response.title }}</h1>
+    </div>
+    <div class="page-head__actions">
+      <a class="button button--outline" href="{% url 'coach:home' %}">← Ask another amount</a>
+    </div>
+  </header>
+
+  <div class="card" style="margin-bottom: var(--space-5); border-left: 5px solid {% if evaluation.can_afford_now %}var(--accent){% elif evaluation.can_afford_forecast %}#d69e2e{% else %}var(--warn-text){% endif %};">
+    <h2 style="font-size: 1.35rem; margin-top: 0; color: {% if evaluation.can_afford_now %}var(--accent){% elif evaluation.can_afford_forecast %}#d69e2e{% else %}var(--warn-text){% endif %};">
+      {{ coach_response.verdict }}
+    </h2>
+    <p style="font-size: 1.05rem; line-height: 1.6; margin: 1rem 0;">
+      {{ coach_response.body }}
+    </p>
+
+    {% if evaluation.coverage_warning %}
+      <div class="chip" style="background: var(--warn-bg); color: var(--warn-text); margin: 0.5rem 0;">
+        {{ evaluation.coverage_warning }}
+      </div>
+    {% endif %}
+
+    <dl class="allowance__breakdown" style="margin: 1.5rem 0;">
+      <div>
+        <dt>Requested purchase</dt>
+        <dd style="font-weight: bold;">{{ evaluation.requested_amount_paise|inr }}</dd>
+      </div>
+      <div>
+        <dt>Cash-backed allowance today</dt>
+        <dd>{{ evaluation.cash_backed_paise|inr }}</dd>
+      </div>
+      <div>
+        <dt>Forecast allowance this month</dt>
+        <dd>{{ evaluation.forecast_allowance_paise|inr }}</dd>
+      </div>
+      <div>
+        <dt>Remaining daily allowance</dt>
+        <dd>{{ evaluation.new_daily_paise|inr }}/day</dd>
+      </div>
+      {% if evaluation.shortfall_paise %}
+        <div>
+          <dt style="color: var(--warn-text);">Estimated shortfall</dt>
+          <dd style="color: var(--warn-text); font-weight: bold;">-{{ evaluation.shortfall_paise|inr }}</dd>
+        </div>
+      {% endif %}
+    </dl>
+
+    <div style="background: var(--bg); padding: 1rem; border-radius: var(--radius-sm); font-size: 0.9rem; line-height: 1.6;">
+      <p style="margin: 0 0 0.5rem;"><strong>Detailed reasoning:</strong> {{ coach_response.reason }}</p>
+      <p style="margin: 0; color: var(--muted);"><strong>Assumptions:</strong> {{ coach_response.assumptions }}</p>
+    </div>
+
+    <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem;">
+      <a class="button" href="{% url 'planning:plan' %}">View full plan</a>
+      <a class="button button--outline" href="{% url 'coach:home' %}">Back to Coach</a>
+    </div>
+  </div>
+{% endblock %}

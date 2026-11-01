@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% load money %}
+
+{% block title %}Plan · Expensure{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">THE REST OF THE MONTH</p>
+      <h1>Plan</h1>
+    </div>
+    <div class="page-head__actions">
+      <a class="button" href="{% url 'planning:income_add' %}">Add expected income</a>
+      <a class="button button--outline" href="{% url 'planning:bill_add' %}">Add bill</a>
+    </div>
+  </header>
+
+  <section class="allowance" aria-labelledby="allowance-heading">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.5rem;">
+      <p class="eyebrow" id="allowance-heading">
+        {% if allowance.is_negative %}PLAN SHORTFALL{% else %}SPENDING ALLOWANCE{% endif %}
+      </p>
+      <div>
+        <a class="text-link small" href="{% url 'planning:monthly_goal' %}">
+          {% if monthly_goal and monthly_goal.savings_paise %}Target: {{ monthly_goal.savings_paise|inr }}{% else %}Set monthly savings target{% endif %}
+        </a>
+      </div>
+    </div>
+
+    {% if allowance.is_negative %}
+      <p class="allowance__amount is-negative">
+        Shortfall: {{ allowance.shortfall_paise|inr }}
+      </p>
+      <p class="muted small">
+        Planned commitments exceed available cash and income. No discretionary spendable allowance.
+      </p>
+    {% else %}
+      <p class="allowance__amount">
+        {{ allowance.allowance_paise|inr }}
+      </p>
+      <p class="muted small">
+        About {{ allowance.per_day_paise|inr }} a day for the
+        {{ allowance.days_left }} day{{ allowance.days_left|pluralize }} left in
+        this month (today included).
+      </p>
+      {% if allowance.income_paise %}
+        <p class="muted small" style="margin-top: -0.25rem;">
+          Cash-backed allowance today (holding bills now): <strong>{{ allowance.cash_backed_paise|inr }}</strong>.
+        </p>
+      {% endif %}
+    {% endif %}
+
+    {% if allowance.is_partial_period %}
+      <p class="chip" style="margin: 0.5rem 0; font-size: 0.8rem; background: var(--warn-bg); color: var(--warn-text);">
+        Month-opening balance is not yet confirmed. A partial-period plan is shown.
+      </p>
+    {% endif %}
+
+    <dl class="allowance__breakdown">
+      <div>
+        <dt>Estimated balances (C)</dt>
+        <dd>{{ allowance.balance_paise|inr }}</dd>
+      </div>
+      <div>
+        <dt>Income still expected (R)</dt>
+        <dd>+ {{ allowance.income_paise|inr }}</dd>
+      </div>
+      <div>
+        <dt>Bills still unpaid (U)</dt>
+        <dd>− {{ allowance.bills_paise|inr }}</dd>
+      </div>
+      <div>
+        <dt>Protected month-end (P)</dt>
+        <dd>− {{ allowance.protected_paise|inr }}</dd>
+      </div>
+    </dl>
+
+    {% if allowance.protected_paise %}
+      <div style="font-size: 0.85rem; color: var(--muted); margin-top: 0.5rem;">
+        Protected reserves include:
+        {% if allowance.b0_paise is not None %}Opening ₹{{ allowance.b0_paise|inr }} + {% endif %}
+        Monthly savings goal: {{ allowance.savings_goal_paise|inr }} ·
+        Minimum account floors: {{ allowance.floors_paise|inr }} ·
+        Account targets: {{ allowance.account_targets_paise|inr }}
+      </div>
+    {% endif %}
+
+    <p class="muted small allowance__note">
+      This is an estimate, not a promise. It uses the balances you confirmed
+      plus the movements you recorded. Income and bills you have already settled
+      are left out, so nothing is counted twice.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="account-constraints-heading">
+    <div class="section-head">
+      <h2 id="account-constraints-heading">Account balance floors & targets</h2>
+      <div class="section-head__side">
+        <span class="muted small">PROTECT YOUR BALANCES</span>
+      </div>
+    </div>
+    <div class="card-grid">
+      {% for acc in accounts %}
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;">{{ acc.nickname }} <span class="muted small">····{{ acc.account_suffix }}</span></h3>
+            <a class="button button--small button--outline" href="{% url 'planning:account_goal' acc.pk %}">Configure</a>
+          </div>
+          <p class="muted small" style="margin-top: 0.5rem;">
+            Minimum floor (F): <strong>{% if acc.goal %}{{ acc.goal.minimum_floor_paise|inr }}{% else %}₹0.00{% endif %}</strong>
+            <br>
+            Month-end target (T): <strong>{% if acc.goal and acc.goal.target_paise is not None %}{{ acc.goal.target_paise|inr }}{% else %}Same as floor{% endif %}</strong>
+          </p>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="goals-heading">
+    <div class="section-head">
+      <h2 id="goals-heading">Goals</h2>
+      <div class="section-head__side">
+        <span class="muted small">MONEY SET ASIDE</span>
+        <a class="text-link" href="{% url 'planning:goals' %}">All goals</a>
+        <a class="text-link" href="{% url 'planning:goal_add' %}">Add goal</a>
+      </div>
+    </div>
+
+    {% if goal %}
+      <div class="card" data-animate="goal">
+        <div class="goal-head">
+          <h3>{{ goal.name }}</h3>
+          <span class="muted small">{{ goal.percent }}%</span>
+        </div>
+        <progress
+          class="progress"
+          value="{{ goal.saved_paise }}"
+          max="{{ goal.target_paise }}"
+          aria-label="{{ goal.name }} progress"
+          data-progress
+        >{{ goal.percent }}%</progress>
+        <p class="muted small">
+          {{ goal.saved_paise|inr }} of {{ goal.target_paise|inr }}
+          {% if goal.is_complete %}
+            · <span class="chip">Complete</span>
+          {% elif goal.target_date %}
+            · by {{ goal.target_date|date:"j M Y" }}
+          {% endif %}
+        </p>
+      </div>
+    {% else %}
+      <div class="empty">
+        <p>No goal yet.</p>
+        <p class="muted small">
+          A goal is a number you are working toward. The app tracks what you
+          tell it you have set aside.
+        </p>
+        <a class="button" href="{% url 'planning:goal_add' %}">Add goal</a>
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="section" aria-labelledby="income-heading">
+    <div class="section-head">
+      <h2 id="income-heading">Income expected</h2>
+      <div class="section-head__side">
+        <span class="muted small">{{ open_income }} still to come</span>
+        <a class="text-link" href="{% url 'planning:income_add' %}">Add</a>
+      </div>
+    </div>
+
+    {% if income_items %}
+      <ul class="plan-list" role="list">
+        {% for item in income_items %}
+          <li class="plan-item">
+            <div class="plan-item__main">
+              <p class="plan-item__desc">{{ item.description }}</p>
+              <p class="muted small">
+                {{ item.expected_on|date:"j M Y" }}
+                {% if item.account %} · {{ item.account.nickname }}{% endif %}
+              </p>
+            </div>
+            <div class="plan-item__side">
+              <p class="plan-item__amount is-credit">+ {{ item.amount_paise|inr }}</p>
+              {% if item.is_open %}
+                <form method="post" action="{% url 'planning:income_settle' item.pk %}">
+                  {% csrf_token %}
+                  <button class="button button--outline" type="submit">Mark received</button>
+                </form>
+              {% else %}
+                <span class="chip">Received</span>
+              {% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty">
+        <p>Nothing expected yet.</p>
+        <p class="muted small">
+          Add a salary or a payment you are waiting for. It counts toward the
+          allowance until it arrives.
+        </p>
+        <a class="button" href="{% url 'planning:income_add' %}">Add expected income</a>
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="section" aria-labelledby="bills-heading">
+    <div class="section-head">
+      <h2 id="bills-heading">Bills</h2>
+      <div class="section-head__side">
+        <span class="muted small">{{ open_bills }} still unpaid</span>
+        <a class="text-link" href="{% url 'planning:bill_add' %}">Add</a>
+      </div>
+    </div>
+
+    {% if bill_items %}
+      <ul class="plan-list" role="list">
+        {% for item in bill_items %}
+          <li class="plan-item">
+            <div class="plan-item__main">
+              <p class="plan-item__desc">{{ item.description }}</p>
+              <p class="muted small">
+                Due {{ item.due_on|date:"j M Y" }}
+                {% if item.account %} · {{ item.account.nickname }}{% endif %}
+              </p>
+            </div>
+            <div class="plan-item__side">
+              <p class="plan-item__amount is-debit">− {{ item.amount_paise|inr }}</p>
+              {% if item.is_open %}
+                <form method="post" action="{% url 'planning:bill_settle' item.pk %}">
+                  {% csrf_token %}
+                  <button class="button button--outline" type="submit">Mark paid</button>
+                </form>
+              {% else %}
+                <span class="chip">Paid</span>
+              {% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty">
+        <p>No bills yet.</p>
+        <p class="muted small">
+          Add a bill you know is coming. It is subtracted from the allowance
+          until you pay it.
+        </p>
+        <a class="button" href="{% url 'planning:bill_add' %}">Add bill</a>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

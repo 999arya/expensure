@@ -5,9 +5,14 @@ from django.shortcuts import render
 from accounts.services import account_cards
 from ledger.models import Transaction
 from ledger.services import unresolved_transfer_count
+from planning.services import allowance_summary, primary_goal
 
 # Development-only preview states. Ignored entirely when DEBUG is off.
 STATES = ("ready", "empty", "loading", "error")
+
+
+def home(request):
+    return render(request, "home.html")
 
 
 @login_required
@@ -30,17 +35,22 @@ def dashboard(request):
         status=Transaction.Status.NEEDS_REVIEW,
     ).count()
     unresolved_count = unresolved_transfer_count(request.user)
+    goal = primary_goal(request.user)
+    allowance = allowance_summary(request.user)
 
     if page_state == "empty":
         accounts = []
         transactions = []
         review_count = 0
         unresolved_count = 0
+        goal = None
+        allowance = None
 
     context = {
         "accounts": accounts,
         "transactions": transactions,
-        "goal": None,
+        "goal": goal,
+        "allowance": allowance,
         "review_count": review_count,
         "unresolved_count": unresolved_count,
         "page_state": page_state,

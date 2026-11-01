@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Account · Expensure{% endblock %}
+
+{% block content %}
+  <section class="auth" aria-labelledby="auth-title">
+    <div class="auth-card" style="border-top: 4px solid var(--warn-text);">
+      <p class="eyebrow" style="color: var(--warn-text);">DANGER ZONE</p>
+      <h1 id="auth-title">Delete your account</h1>
+      <p class="muted">
+        This permanently deletes your account, your bank accounts, all checkpoints,
+        all recorded transactions, and your goals. This action cannot be undone.
+      </p>
+
+      <div style="background: var(--warn-bg); color: var(--warn-text); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; font-size: 0.9rem;">
+        Before deleting, consider downloading an export of your personal data:
+        <br>
+        <a class="button button--small button--outline" href="{% url 'accounts:export' %}" style="margin-top: 0.5rem; display: inline-block;">
+          Download JSON export
+        </a>
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="form-field">
+          <label for="confirm_username">Type your username (<strong>{{ user.username }}</strong>) to confirm:</label>
+          <input
+            type="text"
+            id="confirm_username"
+            name="confirm_username"
+            required
+            autocomplete="off"
+            style="width: 100%; padding: 0.65rem; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--surface); color: var(--text);"
+          >
+        </div>
+
+        <button class="button button--full" type="submit" style="background: #e53e3e; color: #fff; margin-top: 1rem;">
+          Permanently delete my account & data
+        </button>
+      </form>
+
+      <p class="auth-switch">
+        <a href="{% url 'core:dashboard' %}">Cancel</a>
+      </p>
+    </div>
+  </section>
+{% endblock %}

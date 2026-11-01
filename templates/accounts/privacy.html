@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy & Consent Information · Expensure{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">YOUR PRIVACY & DATA RIGHTS</p>
+      <h1>Privacy, Consent & Security</h1>
+      <p class="muted">
+        How Expensure protects your financial information and what consent you provide.
+      </p>
+    </div>
+  </header>
+
+  <section class="section">
+    <div class="card" style="line-height: 1.8; margin-bottom: var(--space-4);">
+      <h2>1. Estimated Balances (No Live Bank Connection)</h2>
+      <p>
+        Expensure does not connect directly to any banking API, does not have banking login credentials,
+        and cannot initiate any money transfers. All balances shown on this platform are estimates
+        calculated from user-confirmed balance checkpoints and manually recorded or SMS-captured movements.
+      </p>
+
+      <h2>2. SMS Capture & Privacy Guarantees (Decision 006)</h2>
+      <p>
+        When you set up message ingestion via Apple Shortcuts or manual paste:
+      </p>
+      <ul style="padding-left: 1.25rem;">
+        <li><strong>No raw message bodies are stored:</strong> The server parses the message deterministically, extracts the amount, direction, account suffix and reference, and discards the raw SMS body immediately.</li>
+        <li><strong>Automatic OTP rejection:</strong> Verification codes and OTPs are detected and rejected. They are never recorded or processed.</li>
+        <li><strong>Device tokens:</strong> Ingestion endpoints require pre-authorized device tokens whose secret values are stored hashed (SHA-256) and can be revoked at any time.</li>
+      </ul>
+
+      <h2>3. AI Processing Policy</h2>
+      <p>
+        When you request AI insights or affordability questions:
+      </p>
+      <ul style="padding-left: 1.25rem;">
+        <li>Calculations are performed in Python first. The AI receives only minimal numerical summaries without your name, email, or full account numbers.</li>
+        <li>The AI cannot alter goals or move funds. Suggestions require your manual confirmation.</li>
+      </ul>
+
+      <h2>4. Data Portability & Complete Erasure</h2>
+      <p>
+        Under our retention and user control rules, you have the right to download a full copy of your data or permanently delete all records:
+      </p>
+      <div style="display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap;">
+        <a class="button button--small" href="{% url 'accounts:export' %}">Export personal data (JSON)</a>
+        <a class="button button--small button--outline" href="{% url 'accounts:delete' %}" style="color: var(--warn-text);">Delete account</a>
+      </div>
+    </div>
+  </section>
+{% endblock %}

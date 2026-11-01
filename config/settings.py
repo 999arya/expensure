@@ -13,16 +13,20 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 import sys
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Local secrets stay out of Git; deployed environment variables take priority.
+load_dotenv(BASE_DIR / ".env", override=False)
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-22f$j+@!d@p3=%ld4cl=7&v5otn3-e5a831!+(ceg0w1fuj2r+'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-local-development-only-do-not-deploy')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -48,6 +52,10 @@ INSTALLED_APPS = [
     'core',
     'accounts',
     'ledger',
+    'planning',
+    'reports',
+    'ingestion',
+    'coach',
 ]
 
 MIDDLEWARE = [
@@ -120,7 +128,7 @@ if sys.argv[1:2] == ["test"]:
 
 LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "core:dashboard"
-LOGOUT_REDIRECT_URL = "accounts:login"
+LOGOUT_REDIRECT_URL = "core:home"
 
 
 # Internationalization
@@ -147,3 +155,13 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+INGESTION_RATE_PER_MINUTE = 30
+
+# Local email appears in the terminal. Production must configure SMTP.
+EMAIL_BACKEND = os.environ.get("DJANGO_EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+DEFAULT_FROM_EMAIL = os.environ.get("DJANGO_DEFAULT_FROM_EMAIL", "noreply@localhost")
+STATIC_ROOT = BASE_DIR / "staticfiles"
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
+AI_DAILY_LIMIT = int(os.environ.get("AI_DAILY_LIMIT", "20"))
+DATA_UPLOAD_MAX_MEMORY_SIZE = 65536

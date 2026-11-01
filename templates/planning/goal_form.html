@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}{% if form.instance.pk %}Edit goal{% else %}Add goal{% endif %} · Expensure{% endblock %}
+
+{% block content %}
+  <section class="auth" aria-labelledby="auth-title">
+    <div class="auth-card">
+      <p class="eyebrow">MONEY SET ASIDE</p>
+      <h1 id="auth-title">{% if form.instance.pk %}Edit goal{% else %}Add goal{% endif %}</h1>
+      <p class="muted">
+        A goal is a number you are working toward. The app cannot see which
+        rupees are earmarked, so you tell it how much you have set aside.
+      </p>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="form-errors" role="alert">
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+          </div>
+        {% endif %}
+
+        {% for field in form %}
+          {% include "partials/form_field.html" with field=field %}
+        {% endfor %}
+
+        <button class="button button--full" type="submit">
+          {% if form.instance.pk %}Save goal{% else %}Add goal{% endif %}
+        </button>
+      </form>
+
+      <p class="auth-switch">
+        <a href="{% url 'planning:goals' %}">Cancel</a>
+      </p>
+    </div>
+  </section>
+{% endblock %}

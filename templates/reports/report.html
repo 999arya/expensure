@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+{% load static %}
+{% load money %}
+
+{% block title %}Monthly Report · {{ selected_date|date:"F Y" }} · Expensure{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">FINANCIAL SUMMARY</p>
+      <h1>{{ selected_date|date:"F Y" }} Report</h1>
+      {% if report.is_partial %}
+        <span class="chip" style="background: var(--warn-bg); color: var(--warn-text); font-size: 0.85rem;">
+          {{ report.coverage_note }}
+        </span>
+      {% else %}
+        <span class="muted small">{{ report.coverage_note }}</span>
+      {% endif %}
+    </div>
+
+    <div class="page-head__actions" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+      <a class="button button--outline" href="{% url 'reports:overview' %}?year={{ prev_year }}&month={{ prev_month }}">
+        ← {{ prev_year }}-{{ prev_month|stringformat:"02d" }}
+      </a>
+      {% if not is_current_month %}
+        <a class="button button--outline" href="{% url 'reports:overview' %}">Current</a>
+        <a class="button button--outline" href="{% url 'reports:overview' %}?year={{ next_year }}&month={{ next_month }}">
+          {{ next_year }}-{{ next_month|stringformat:"02d" }} →
+        </a>
+      {% endif %}
+      <a class="button" href="{% url 'reports:export_csv' %}?year={{ report.year }}&month={{ report.month }}">
+        Download CSV
+      </a>
+    </div>
+  </header>
+
+  <!-- Metric Overview Cards -->
+  <div class="card-grid" style="margin-bottom: var(--space-5);">
+    <div class="card">
+      <p class="eyebrow">INCOME</p>
+      <h2 style="color: var(--accent); margin: 0.25rem 0;">{{ report.income_paise|inr }}</h2>
+      <p class="muted small">Classified external income</p>
+      {% if report.has_preceding %}
+        <p class="muted small" style="margin-top: 0.25rem;">
+          {% if report.income_diff_paise >= 0 %}▲{% else %}▼{% endif %}
+          {{ report.income_diff_paise|inr }} vs prev month
+        </p>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">NET SPENDING</p>
+      <h2 style="margin: 0.25rem 0;">{{ report.expenses_paise|inr }}</h2>
+      <p class="muted small">
+        Excludes transfers · Refunds: -{{ report.refunds_paise|inr }}
+      </p>
+      {% if report.has_preceding %}
+        <p class="muted small" style="margin-top: 0.25rem;">
+          {% if report.expenses_diff_paise > 0 %}▲{% else %}▼{% endif %}
+          {{ report.expenses_diff_paise|inr }} vs prev month
+        </p>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">NET SAVINGS</p>
+      <h2 style="margin: 0.25rem 0; {% if report.net_savings_paise < 0 %}color: var(--warn-text);{% endif %}">
+        {{ report.net_savings_paise|inr }}
+      </h2>
+      <p class="muted small">
+        {% if report.savings_goal_paise %}
+          Target: {{ report.savings_goal_paise|inr }}
+          ({% if report.savings_vs_goal_paise >= 0 %}+{{ report.savings_vs_goal_paise|inr }}{% else %}-{{ report.savings_vs_goal_paise|inr }}{% endif %})
+        {% else %}
+          Income minus net expenses
+        {% endif %}
+      </p>
+      {% if report.has_preceding %}
+        <p class="muted small" style="margin-top: 0.25rem;">
+          {% if report.savings_diff_paise >= 0 %}▲{% else %}▼{% endif %}
+          {{ report.savings_diff_paise|inr }} vs prev month
+        </p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Interactive Charts Section -->
+  <section class="section" aria-labelledby="charts-heading">
+    <h2 id="charts-heading">Visual breakdown</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-5);">
+      <div class="card" style="min-height: 320px; display: flex; flex-direction: column;">
+        <h3 style="font-size: 1rem; margin-bottom: var(--space-3);">Spending by Category</h3>
+        <div style="flex: 1; position: relative; min-height: 250px;">
+          <canvas id="categoryChart" aria-label="Spending by category chart" role="img"></canvas>
+        </div>
+      </div>
+      <div class="card" style="min-height: 320px; display: flex; flex-direction: column;">
+        <h3 style="font-size: 1rem; margin-bottom: var(--space-3);">Cash Flow Breakdown</h3>
+        <div style="flex: 1; position: relative; min-height: 250px;">
+          <canvas id="cashflowChart" aria-label="Cash flow comparison chart" role="img"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Category Net Spending Table -->
+  <section class="section" aria-labelledby="category-heading">
+    <div class="section-head">
+      <h2 id="category-heading">Spending by Category</h2>
+      <span class="muted small">REFUNDS DEDUCTED (DECISION 003)</span>
+    </div>
+
+    {% if report.categories %}
+      <div class="card" style="overflow-x: auto; padding: 0;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--line); color: var(--muted); font-size: 0.8rem; text-transform: uppercase;">
+              <th style="padding: 0.75rem 1rem;">Category</th>
+              <th style="padding: 0.75rem 1rem; text-align: right;">Debits</th>
+              <th style="padding: 0.75rem 1rem; text-align: right;">Refunds</th>
+              <th style="padding: 0.75rem 1rem; text-align: right;">Net Spent</th>
+              <th style="padding: 0.75rem 1rem; text-align: right;">Share</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cat in report.categories %}
+              <tr style="border-bottom: 1px solid var(--line);">
+                <td style="padding: 0.75rem 1rem; font-weight: 500;">{{ cat.name }}</td>
+                <td style="padding: 0.75rem 1rem; text-align: right;">{{ cat.debits_paise|inr }}</td>
+                <td style="padding: 0.75rem 1rem; text-align: right; color: var(--muted);">
+                  {% if cat.refunds_paise %}-{{ cat.refunds_paise|inr }}{% else %}—{% endif %}
+                </td>
+                <td style="padding: 0.75rem 1rem; text-align: right; font-weight: 600;">{{ cat.net_paise|inr }}</td>
+                <td style="padding: 0.75rem 1rem; text-align: right; color: var(--muted);">{{ cat.percent }}%</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="card empty-state">
+        <p class="muted">No recorded expenses for this month.</p>
+      </div>
+    {% endif %}
+  </section>
+
+  <!-- Bank-wise Cash Flow Table -->
+  <section class="section" aria-labelledby="bank-cashflow-heading">
+    <div class="section-head">
+      <h2 id="bank-cashflow-heading">Bank-wise Cash Flow</h2>
+      <span class="muted small">ALL MOVEMENTS PER ACCOUNT</span>
+    </div>
+
+    <div class="card" style="overflow-x: auto; padding: 0;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--line); color: var(--muted); font-size: 0.8rem; text-transform: uppercase;">
+            <th style="padding: 0.75rem 1rem;">Account</th>
+            <th style="padding: 0.75rem 1rem; text-align: right;">Opening (B₀)</th>
+            <th style="padding: 0.75rem 1rem; text-align: right;">Inflow</th>
+            <th style="padding: 0.75rem 1rem; text-align: right;">Outflow</th>
+            <th style="padding: 0.75rem 1rem; text-align: right;">Net Flow</th>
+            <th style="padding: 0.75rem 1rem; text-align: right;">Closing Est.</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for acc in report.accounts_cash_flow %}
+            <tr style="border-bottom: 1px solid var(--line);">
+              <td style="padding: 0.75rem 1rem;">
+                <strong>{{ acc.nickname }}</strong>
+                <span class="muted small">· {{ acc.bank }} (····{{ acc.suffix }})</span>
+              </td>
+              <td style="padding: 0.75rem 1rem; text-align: right;">
+                {% if acc.opening_balance_paise is not None %}{{ acc.opening_balance_paise|inr }}{% else %}<span class="muted">Unconfirmed</span>{% endif %}
+              </td>
+              <td style="padding: 0.75rem 1rem; text-align: right; color: var(--accent);">+{{ acc.credits_paise|inr }}</td>
+              <td style="padding: 0.75rem 1rem; text-align: right;">-{{ acc.debits_paise|inr }}</td>
+              <td style="padding: 0.75rem 1rem; text-align: right; font-weight: 500;">
+                {% if acc.net_flow_paise >= 0 %}+{% endif %}{{ acc.net_flow_paise|inr }}
+              </td>
+              <td style="padding: 0.75rem 1rem; text-align: right; font-weight: 600;">{{ acc.closing_balance_paise|inr }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Recurring Payment Suggestions -->
+  {% if report.recurring_candidates %}
+    <section class="section" aria-labelledby="recurring-heading">
+      <div class="section-head">
+        <h2 id="recurring-heading">Recurring Payment Suggestions</h2>
+        <span class="muted small">DETECTED REGULAR PAYMENTS</span>
+      </div>
+      <p class="muted small">
+        These merchants appear repeatedly in your activity. You can confirm them as recurring payments or dismiss them.
+      </p>
+
+      <div class="card-grid">
+        {% for cand in report.recurring_candidates %}
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
+              <div>
+                <h3 style="margin: 0; font-size: 1.05rem;">{{ cand.merchant_name }}</h3>
+                <p class="muted small" style="margin-top: 0.25rem;">
+                  {{ cand.count }} occurrences · Avg {{ cand.typical_amount_paise|inr }}
+                  {% if cand.category_name %}· {{ cand.category_name }}{% endif %}
+                </p>
+              </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+              <form method="post" action="{% url 'reports:recurring_confirm' %}">
+                {% csrf_token %}
+                <input type="hidden" name="merchant" value="{{ cand.merchant_name }}">
+                <button class="button button--small" type="submit">Confirm recurring</button>
+              </form>
+              <form method="post" action="{% url 'reports:recurring_dismiss' %}">
+                {% csrf_token %}
+                <input type="hidden" name="merchant" value="{{ cand.merchant_name }}">
+                <button class="button button--small button--outline" type="submit">Dismiss</button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'vendor/chartjs/chart.umd.min.js' %}"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const year = {{ report.year }};
+      const month = {{ report.month }};
+
+      fetch(`{% url 'reports:api_data' %}?year=${year}&month=${month}`)
+        .then(res => res.json())
+        .then(data => {
+          const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          const textColor = isDark ? '#eef1f3' : '#16181a';
+          const gridColor = isDark ? '#2c3237' : '#dcdedb';
+
+          // Category Donut Chart
+          const catCtx = document.getElementById('categoryChart');
+          if (catCtx && data.categories.labels.length > 0) {
+            new Chart(catCtx, {
+              type: 'doughnut',
+              data: {
+                labels: data.categories.labels,
+                datasets: [{
+                  data: data.categories.values,
+                  backgroundColor: data.categories.colors,
+                  borderWidth: 1,
+                  borderColor: isDark ? '#1c2024' : '#ffffff'
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'bottom',
+                    labels: { color: textColor, boxWidth: 12, padding: 10 }
+                  }
+                }
+              }
+            });
+          } else if (catCtx) {
+            catCtx.parentElement.innerHTML = '<p class="muted small" style="text-align:center; padding: 2rem;">No category expense data for this month.</p>';
+          }
+
+          // Cash Flow Bar Chart
+          const flowCtx = document.getElementById('cashflowChart');
+          if (flowCtx) {
+            new Chart(flowCtx, {
+              type: 'bar',
+              data: {
+                labels: ['Income', 'Expenses', 'Net Savings'],
+                datasets: [{
+                  label: 'Amount (₹)',
+                  data: [data.income, data.expenses, data.savings],
+                  backgroundColor: ['#146356', '#dd6b20', data.savings >= 0 ? '#3182ce' : '#e53e3e'],
+                  borderRadius: 6
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    ticks: { color: textColor },
+                    grid: { color: gridColor }
+                  },
+                  x: {
+                    ticks: { color: textColor },
+                    grid: { display: false }
+                  }
+                },
+                plugins: {
+                  legend: { display: false }
+                }
+              }
+            });
+          }
+        })
+        .catch(err => console.error("Could not load chart data:", err));
+    });
+  </script>
+{% endblock %}

@@ -26,3 +26,13 @@ Thumbs.db
 # Editors
 .idea/
 .vscode/
+
+# Deployment example contains placeholders only
+!.env.example
+backups/
+
+# Local quality-tool caches
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Account Constraints · {{ account.nickname }} · Expensure{% endblock %}
+
+{% block content %}
+  <section class="auth" aria-labelledby="auth-title">
+    <div class="auth-card">
+      <p class="eyebrow">PROTECTED BALANCE (F & T)</p>
+      <h1 id="auth-title">{{ account.nickname }} (····{{ account.account_suffix }})</h1>
+      <p class="muted">
+        Define an always-on minimum balance floor (F) that this account must never drop below,
+        and an optional end-of-month target (T).
+      </p>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="form-errors" role="alert">
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+          </div>
+        {% endif %}
+
+        {% for field in form %}
+          {% include "partials/form_field.html" with field=field %}
+        {% endfor %}
+
+        <button class="button button--full" type="submit">
+          Save constraints
+        </button>
+      </form>
+
+      <p class="auth-switch">
+        <a href="{% url 'planning:plan' %}">Back to plan</a>
+      </p>
+    </div>
+  </section>
+{% endblock %}

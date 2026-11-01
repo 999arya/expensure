@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% load money %}
+
+{% block title %}Apple Shortcuts Capture · Expensure{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">IPHONE AUTOMATION</p>
+      <h1>Set up transaction capture</h1>
+      <p class="muted">
+        Configure an Apple Shortcut on your iPhone to ingest bank transaction SMS automatically.
+      </p>
+    </div>
+    <div class="page-head__actions">
+      <a class="button button--outline" href="{% url 'ingestion:paste' %}">← Paste message</a>
+    </div>
+  </header>
+
+  {% if raw_token_display %}
+    <div class="card" style="border: 2px solid var(--accent); background: var(--accent-soft); margin-bottom: var(--space-5);">
+      <h3 style="margin-top: 0; color: var(--accent);">Your new device token</h3>
+      <p class="small">Copy this token now. For your security, it will not be displayed again:</p>
+      <div style="background: var(--surface); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--line); font-family: monospace; font-size: 1rem; word-break: break-all; user-select: all;">
+        {{ raw_token_display }}
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Setup Instructions -->
+  <section class="section" aria-labelledby="guide-heading">
+    <div class="section-head">
+      <h2 id="guide-heading">Guided iPhone Setup</h2>
+      <span class="muted small">APPLE SHORTCUTS INGESTION</span>
+    </div>
+
+    <div class="card" style="margin-bottom: var(--space-5);">
+      <ol style="padding-left: 1.25rem; line-height: 1.8; margin: 0;">
+        <li>Open the <strong>Shortcuts</strong> app on your iPhone.</li>
+        <li>Tap the <strong>Automation</strong> tab at the bottom, then tap <strong>+</strong> in the top-right.</li>
+        <li>Choose <strong>Message</strong> as the trigger.</li>
+        <li>Under <em>Message Contains</em>, enter: <code>Kotak, debited, credited, Baroda</code>.</li>
+        <li>Select <strong>Run Immediately</strong> and turn off <em>Notify When Run</em>.</li>
+        <li>Tap <strong>Next</strong> and choose <strong>New Blank Automation</strong>.</li>
+        <li>Add the action: <strong>Get Contents of URL</strong>:
+          <ul style="margin-top: 0.25rem; line-height: 1.6;">
+            <li><strong>URL</strong>: <code>{{ request.scheme }}://{{ request.get_host }}{% url 'ingestion:api_ingest' %}</code></li>
+            <li><strong>Method</strong>: <code>POST</code></li>
+            <li><strong>Headers</strong>:
+              <br><code>Authorization</code>: <code>Bearer &lt;your_device_token&gt;</code>
+              <br><code>Content-Type</code>: <code>application/json</code>
+            </li>
+            <li><strong>Request Body</strong>: <code>JSON</code>
+              <br>Add key: <code>message</code> (Type: Text) → select <strong>Shortcut Input</strong>.
+            </li>
+          </ul>
+        </li>
+        <li>Tap <strong>Done</strong>. Whenever a matching bank SMS arrives, your iPhone securely sends it to your ledger!</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Device Tokens -->
+  <section class="section" aria-labelledby="tokens-heading">
+    <div class="section-head">
+      <h2 id="tokens-heading">Device Tokens</h2>
+      <span class="muted small">MANAGE ACCESS TO YOUR INGESTION API</span>
+    </div>
+
+    <div class="card" style="margin-bottom: var(--space-4);">
+      <form method="post" action="{% url 'ingestion:token_generate' %}" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        {% csrf_token %}
+        <input
+          type="text"
+          name="name"
+          placeholder="Device name (e.g. My iPhone 15)"
+          required
+          style="flex: 1; min-width: 200px; padding: 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--surface); color: var(--text);"
+        >
+        <button class="button" type="submit">Generate new token</button>
+      </form>
+    </div>
+
+    {% if tokens %}
+      <div class="card" style="overflow-x: auto; padding: 0; margin-bottom: var(--space-5);">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--line); color: var(--muted); font-size: 0.8rem; text-transform: uppercase;">
+              <th style="padding: 0.75rem 1rem;">Device Name</th>
+              <th style="padding: 0.75rem 1rem;">Created</th>
+              <th style="padding: 0.75rem 1rem;">Last Used</th>
+              <th style="padding: 0.75rem 1rem;">Status</th>
+              <th style="padding: 0.75rem 1rem; text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for tok in tokens %}
+              <tr style="border-bottom: 1px solid var(--line);">
+                <td style="padding: 0.75rem 1rem; font-weight: 500;">{{ tok.name }}</td>
+                <td style="padding: 0.75rem 1rem;">{{ tok.created_at|date:"d M Y" }}</td>
+                <td style="padding: 0.75rem 1rem;">{% if tok.last_used_at %}{{ tok.last_used_at|date:"d M Y, H:i" }}{% else %}<span class="muted">Never</span>{% endif %}</td>
+                <td style="padding: 0.75rem 1rem;">
+                  {% if tok.is_active %}
+                    <span class="chip" style="background: var(--accent-soft); color: var(--accent);">Active</span>
+                  {% else %}
+                    <span class="chip" style="background: var(--line); color: var(--muted);">Revoked</span>
+                  {% endif %}
+                </td>
+                <td style="padding: 0.75rem 1rem; text-align: right;">
+                  {% if tok.is_active %}
+                    <form method="post" action="{% url 'ingestion:token_revoke' tok.pk %}" style="display: inline;">
+                      {% csrf_token %}
+                      <button class="link-button" style="color: var(--warn-text);" type="submit">Revoke</button>
+                    </form>
+                  {% else %}
+                    <span class="muted small">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </section>
+
+  <!-- Ingestion Event Log -->
+  <section class="section" aria-labelledby="events-heading">
+    <div class="section-head">
+      <h2 id="events-heading">Recent Capture Events</h2>
+      <span class="muted small">PRIVACY PRESERVED (NO RAW BODIES)</span>
+    </div>
+
+    {% if events %}
+      <div class="card" style="overflow-x: auto; padding: 0;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--line); color: var(--muted); font-size: 0.8rem; text-transform: uppercase;">
+              <th style="padding: 0.75rem 1rem;">Time</th>
+              <th style="padding: 0.75rem 1rem;">Outcome</th>
+              <th style="padding: 0.75rem 1rem;">Bank / Suffix</th>
+              <th style="padding: 0.75rem 1rem; text-align: right;">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ev in events %}
+              <tr style="border-bottom: 1px solid var(--line);">
+                <td style="padding: 0.75rem 1rem;">{{ ev.created_at|date:"d M, H:i:s" }}</td>
+                <td style="padding: 0.75rem 1rem;">
+                  {% if ev.outcome == "success" %}
+                    <span style="color: var(--accent);">Captured</span>
+                  {% elif ev.outcome == "rejected_otp" %}
+                    <span style="color: var(--warn-text);">OTP Rejected</span>
+                  {% elif ev.outcome == "duplicate" %}
+                    <span class="muted">Duplicate</span>
+                  {% else %}
+                    <span class="muted">{{ ev.get_outcome_display }}</span>
+                  {% endif %}
+                </td>
+                <td style="padding: 0.75rem 1rem;">
+                  {% if ev.bank %}{{ ev.bank|upper }} ····{{ ev.account_suffix }}{% else %}—{% endif %}
+                </td>
+                <td style="padding: 0.75rem 1rem; text-align: right;">
+                  {% if ev.amount_paise %}{{ ev.amount_paise|inr }}{% else %}—{% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="card empty-state">
+        <p class="muted">No ingestion events recorded yet.</p>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

@@ -12,20 +12,20 @@
 
   media.add("(prefers-reduced-motion: no-preference)", function (context) {
     var cleanups = [];
-    var intro = gsap.timeline({ defaults: { ease: "power3.out", duration: 0.9 } });
-    intro.from("[data-hero-line]", { yPercent: 115, rotate: 2, stagger: 0.13 })
+    var intro = gsap.timeline({ defaults: { ease: "power3.out", duration: 0.75 } });
+    intro.from("[data-hero-line]", { yPercent: 100, stagger: 0.09 })
       .from("[data-hero]", { opacity: 0, y: 14, stagger: 0.1 }, 0.2)
-      .from("[data-orbit]", { opacity: 0, scale: 0.86, rotation: -12, duration: 1.2 }, 0.1);
+      .from("[data-orbit]", { opacity: 0, scale: 0.96, duration: 0.9 }, 0.1);
     var ring = document.querySelector("[data-ring]");
     if (ring) intro.from(ring, { attr: { "stroke-dasharray": "0 100" }, duration: 1.6, ease: "power2.inOut" }, 0.35);
-    intro.from(".finance-stage", { clipPath: "inset(15% 10% 15% 10% round 100px)", duration: 1.4 }, 0)
-      .from(".sculpture-core", { scale: 0.2, rotation: -80, duration: 1.5, ease: "back.out(1.4)" }, 0.2);
+    intro.from(".finance-stage", { y: 24, opacity: 0.5, duration: 0.9, clearProps: "transform,opacity" }, 0)
+      .from(".sculpture-core", { scale: 0.85, duration: 0.9 }, 0.2);
     var ambient = gsap.timeline({ repeat: -1 });
     ambient.to(".ring-a", { rotationZ: "+=360", duration: 24, ease: "none" }, 0)
       .to(".ring-b", { rotationZ: "-=360", duration: 24, ease: "none" }, 0)
       .to(".ring-c", { rotationZ: "+=360", duration: 24, ease: "none" }, 0)
       .to(".orbit-satellite", { rotation: 360, svgOrigin: "180 180", duration: 24, ease: "none" }, 0);
-    var floats = gsap.to(".floating-tag", { y: -16, rotation: "+=5", stagger: 0.5, duration: 2.5, repeat: -1, yoyo: true, ease: "sine.inOut" });
+    var floats = gsap.to(".floating-tag", { y: -8, stagger: 0.5, duration: 3.5, repeat: -1, yoyo: true, ease: "sine.inOut" });
     var ribbon = gsap.to(".ribbon-track", { xPercent: -50, duration: 28, ease: "none", repeat: -1 });
     function visibility() {
       [ambient, floats, ribbon].forEach(function (animation) { animation.paused(document.hidden); });
@@ -33,10 +33,8 @@
     document.addEventListener("visibilitychange", visibility);
     cleanups.push(function () { document.removeEventListener("visibilitychange", visibility); });
     if (window.ScrollTrigger) {
-      gsap.to(".sculpture", { y: 100, rotation: 35, ease: "none", scrollTrigger: { trigger: ".overview-hero", start: "top top", end: "bottom top", scrub: 1 } });
-      gsap.to(".hero-copy", { y: 35, ease: "none", scrollTrigger: { trigger: ".overview-hero", start: "top top", end: "bottom top", scrub: 1 } });
+      gsap.to(".sculpture", { y: 45, rotation: 12, ease: "none", scrollTrigger: { trigger: ".overview-hero", start: "top top", end: "bottom top", scrub: 1 } });
       gsap.to(".reading-progress", { scaleX: 1, ease: "none", scrollTrigger: { start: 0, end: "max", scrub: 0.3 } });
-      gsap.from(".account-grid > li", { y: 65, rotation: function (index) { return window.matchMedia("(min-width: 900px)").matches ? (index - 1) * 6 : 0; }, stagger: 0.15, ease: "power2.out", scrollTrigger: { trigger: ".account-grid", start: "top 95%", end: "top 55%", scrub: 0.7 } });
     }
 
     context.add("reveal", function (element, delay) {
@@ -65,8 +63,8 @@
       var rotateY = gsap.quickTo(card, "rotationY", { duration: 0.55, ease: "power3.out" });
       function move(event) {
         var rect = card.getBoundingClientRect();
-        rotateX((0.5 - (event.clientY - rect.top) / rect.height) * 12);
-        rotateY(((event.clientX - rect.left) / rect.width - 0.5) * 12);
+        rotateX((0.5 - (event.clientY - rect.top) / rect.height) * 5);
+        rotateY(((event.clientX - rect.left) / rect.width - 0.5) * 5);
       }
       function reset() { rotateX(0); rotateY(0); }
       card.addEventListener("pointermove", move);

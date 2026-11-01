@@ -6,7 +6,7 @@
       <p class="eyebrow">START HERE</p>
       <h1 id="auth-title">Create your account</h1>
       <p class="muted">
-        Add your accounts yourself. There is no bank connection and nothing is
+        Set up your personal details and first bank account together. Add more accounts later. There is no bank connection and nothing is
         read from your bank.
       </p>
 
@@ -19,10 +19,18 @@
           </div>
         {% endif %}
 
+        <fieldset class="signup-group"><legend>01 / About you &amp; your login</legend>
         {% for field in form %}
           {% include "partials/form_field.html" with field=field %}
         {% endfor %}
 
+        </fieldset>
+        <fieldset class="signup-group"><legend>02 / Your first bank account</legend>
+          <p class="muted small">Enter the balance your bank shows now. Only the last four digits are needed.</p>
+          {% if account_form.non_field_errors %}<div class="form-errors" role="alert">{{ account_form.non_field_errors }}</div>{% endif %}
+          {% for field in account_form %}{% include "partials/form_field.html" with field=field %}{% endfor %}
+        </fieldset>
+        <p class="muted small">Next: open your dashboard, choose a goal, and get steps to work toward it.</p>
         <button class="button button--full" type="submit">Create account</button>
       </form>
 

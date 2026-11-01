@@ -1,3 +1,1 @@
-from django.db import models
-
-# Create your models here.
+"""Shared presentation utilities; no database models or admin registrations."""

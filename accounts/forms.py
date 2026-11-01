@@ -16,21 +16,30 @@ DATETIME_FORMAT = "%Y-%m-%dT%H:%M"
 
 
 class SignupForm(UserCreationForm):
-    """Username, optional email, and a password entered twice.
+    """Personal details and a password entered twice.
 
     Django's password validators run here, so a weak password is rejected
     before the user row is ever written.
     """
 
+    first_name = forms.CharField(max_length=150, label="First name")
+    last_name = forms.CharField(max_length=150, required=False, label="Last name (optional)")
     email = forms.EmailField(
-        required=False,
-        label="Email (optional)",
+        required=True,
+        label="Email",
         help_text="Only used to recover your account later.",
     )
 
     class Meta(UserCreationForm.Meta):
         model = User
-        fields = ("username", "email")
+        fields = ("first_name", "last_name", "email", "username")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["username"].widget.attrs.pop("autofocus", None)
+        self.fields["first_name"].widget.attrs.update(autofocus=True, autocomplete="given-name")
+        self.fields["last_name"].widget.attrs["autocomplete"] = "family-name"
+        self.fields["email"].widget.attrs["autocomplete"] = "email"
 
     def clean_email(self):
         email = (self.cleaned_data.get("email") or "").strip().lower()
@@ -57,14 +66,17 @@ class BankAccountForm(forms.ModelForm):
         model = BankAccount
         fields = ("bank", "nickname", "account_type", "account_suffix")
         labels = {
+            "bank": "Bank name",
             "account_suffix": "Last 4 digits",
             "account_type": "Account type",
         }
         help_texts = {
+            "bank": "Enter your bank's name, for example HDFC Bank or State Bank of India.",
             "account_suffix": "Only the last four digits. Never the full number.",
             "nickname": "Something you will recognise, like “Kotak salary”.",
         }
         widgets = {
+            "bank": forms.TextInput(attrs={"placeholder": "Enter your bank name", "autocomplete": "off"}),
             "account_suffix": forms.TextInput(
                 attrs={
                     "inputmode": "numeric",
@@ -80,6 +92,17 @@ class BankAccountForm(forms.ModelForm):
         self.owner = owner
         super().__init__(*args, **kwargs)
 
+    def clean_bank(self):
+        name = " ".join(self.cleaned_data["bank"].split())
+        if not name:
+            raise forms.ValidationError("Enter your bank's name.")
+        # Keep supported SMS parsers compatible with both old and new accounts.
+        aliases = {
+            "kotak": "kotak", "kotak bank": "kotak", "kotak mahindra": "kotak",
+            "kotak mahindra bank": "kotak", "bob": "bob", "bank of baroda": "bob",
+        }
+        return aliases.get(name.casefold(), name)
+
     def clean(self):
         data = super().clean()
         bank = data.get("bank")
@@ -89,7 +112,7 @@ class BankAccountForm(forms.ModelForm):
         if bank and account_type and suffix:
             already_added = BankAccount.objects.filter(
                 owner=self.owner,
-                bank=bank,
+                bank__iexact=bank,
                 account_type=account_type,
                 account_suffix=suffix,
             ).exists()

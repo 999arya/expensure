@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Monthly Savings Target · Expensure{% endblock %}
+
+{% block content %}
+  <section class="auth" aria-labelledby="auth-title">
+    <div class="auth-card">
+      <p class="eyebrow">MONTHLY TARGET (G)</p>
+      <h1 id="auth-title">Monthly Savings Target</h1>
+      <p class="muted">
+        Set the target amount of money you want to save over and above your month-opening balance for {{ month|date:"F Y" }}.
+        This protects your savings when calculating your discretionary spending allowance.
+      </p>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="form-errors" role="alert">
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+          </div>
+        {% endif %}
+
+        {% for field in form %}
+          {% include "partials/form_field.html" with field=field %}
+        {% endfor %}
+
+        <button class="button button--full" type="submit">
+          Save savings target
+        </button>
+      </form>
+
+      <p class="auth-switch">
+        <a href="{% url 'planning:plan' %}">Back to plan</a>
+      </p>
+    </div>
+  </section>
+{% endblock %}

@@ -5,6 +5,17 @@
 {% block title %}Overview · Expensure{% endblock %}
 
 {% block content %}
+  {% if page_state == "ready" %}
+  <section class="card next-step" aria-labelledby="next-step-title">
+    <div><p class="eyebrow">YOUR NEXT STEP</p>
+    {% if not accounts %}<h2 id="next-step-title">Start with your bank account</h2><p class="muted">Add your current balance to build your financial picture.</p>
+    {% elif not goal %}<h2 id="next-step-title">What would you like to save for, {{ user.first_name|default:user.username }}?</h2><p class="muted">Set your first goal. Your coach will break it into practical steps.</p>
+    {% else %}<h2 id="next-step-title">Keep moving toward {{ goal.name }}</h2><p class="muted">Review your next steps as your balance and plans change.</p>{% endif %}</div>
+    {% if not accounts %}<a class="button" href="{% url 'accounts:add' %}">Add your first account</a>
+    {% elif not goal %}<a class="button" href="{% url 'planning:goal_add' %}">Set your first goal</a>
+    {% else %}<a class="button" href="{% url 'coach:home' %}">See my next steps</a>{% endif %}
+  </section>
+  {% endif %}
   <div class="reading-progress" aria-hidden="true"></div>
   <div class="motion-toolbar"><span><i></i> EXPENSURE / PERSONAL SPACE</span><button type="button" class="motion-toggle" aria-pressed="false" hidden>Pause motion</button></div>
   <section class="overview-hero" aria-labelledby="overview-title">
@@ -90,6 +101,7 @@
           <span class="muted small">01 — Estimated balances</span>
           <a class="text-link" href="{% url 'ledger:transfers' %}">Transfers</a>
           <a class="text-link" href="{% url 'accounts:add' %}">Add account</a>
+          <a class="text-link" href="{% url 'ingestion:paste' %}">Set up transaction capture</a>
         </div>
       </div>
 
@@ -133,9 +145,40 @@
       {% endif %}
     </section>
 
+    {% if allowance %}
+      <section class="section" aria-labelledby="allowance-heading">
+        <div class="section-head">
+          <h2 id="allowance-heading">Spending allowance</h2>
+          <div class="section-head__side">
+            <span class="muted small">03 — THE REST OF THE MONTH</span>
+            <a class="text-link" href="{% url 'planning:plan' %}">Open plan</a>
+          </div>
+        </div>
+
+        <div class="allowance allowance--compact" data-animate="goal">
+          <p class="allowance__amount{% if allowance.is_negative %} is-negative{% endif %}">
+            {{ allowance.allowance_paise|inr }}
+          </p>
+          <p class="muted small">
+            About {{ allowance.per_day_paise|inr }} a day for the
+            {{ allowance.days_left }} day{{ allowance.days_left|pluralize }} left.
+            Balances {{ allowance.balance_paise|inr }}
+            + expected income {{ allowance.income_paise|inr }}
+            − unpaid bills {{ allowance.bills_paise|inr }}.
+          </p>
+        </div>
+      </section>
+    {% endif %}
+
     {% if goal %}
       <section class="section" aria-labelledby="goal-heading">
-        <h2 id="goal-heading">Savings goal</h2>
+        <div class="section-head">
+          <h2 id="goal-heading">Savings goal</h2>
+          <div class="section-head__side">
+            <span class="muted small">04 — MONEY SET ASIDE</span>
+            <a class="text-link" href="{% url 'planning:goals' %}">All goals</a>
+          </div>
+        </div>
 
         <div class="card" data-animate="goal">
           <div class="goal-head">
@@ -167,7 +210,6 @@
 {% endblock %}
 
 {% block scripts %}
-  <script src="{% static 'vendor/gsap/gsap.min.js' %}" defer></script>
   <script src="{% static 'vendor/gsap/ScrollTrigger.min.js' %}" defer></script>
   <script src="{% static 'js/dashboard.js' %}" defer></script>
 {% endblock %}

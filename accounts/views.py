@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
@@ -18,25 +19,26 @@ from .services import estimate_balance, latest_checkpoint
 
 @transaction.atomic
 def signup(request):
-    """Create a user, their starter categories, and log them in.
-
-    The whole thing is one transaction: a user is never left without
-    categories because the second write failed.
-    """
+    """Create personal details, first account and categories atomically."""
     if request.user.is_authenticated:
         return redirect("core:dashboard")
 
+    data = request.POST if request.method == "POST" else None
+    form = SignupForm(data)
+    account_form = BankAccountForm(data, owner=None, prefix="bank")
     if request.method == "POST":
-        form = SignupForm(request.POST)
-        if form.is_valid():
+        user_valid = form.is_valid()
+        account_valid = account_form.is_valid()
+        if user_valid and account_valid:
             user = form.save()
+            account_form.owner = user
+            account_form.save()
             seed_default_categories(user)
             login(request, user)
+            messages.success(request, "Your account is ready. Set your first goal to get a step-by-step plan.")
             return redirect("core:dashboard")
-    else:
-        form = SignupForm()
 
-    return render(request, "accounts/signup.html", {"form": form})
+    return render(request, "accounts/signup.html", {"form": form, "account_form": account_form})
 
 
 class AddAccountView(LoginRequiredMixin, CreateView):
@@ -116,3 +118,260 @@ class ConfirmBalanceView(LoginRequiredMixin, View):
             f"Estimated balance for {account.nickname} is {format_inr(estimate)}.",
         )
         return redirect("core:dashboard")
+
+
+@login_required
+def export_user_data(request):
+    """Download full JSON export of all personal financial data (Phase 8)."""
+    import json
+    from django.http import HttpResponse
+    from coach.models import AIUsage, FinancialInsight
+    from ingestion.models import CaptureRequest, DeviceToken, IngestionEvent
+    from ledger.models import Category, Transaction, Transfer
+    from planning.models import AccountGoal, Bill, Goal, IncomePlan, MonthlyGoal
+    from reports.models import MonthlyReportSnapshot, RecurringPaymentRule
+
+    user = request.user
+    today_str = timezone.localdate().strftime("%Y%m%d")
+
+    data = {
+        "user": {
+            "username": user.username,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
+            "date_joined": user.date_joined.isoformat(),
+        },
+        "accounts": [
+            {
+                "id": acc.id,
+                "bank": acc.bank,
+                "nickname": acc.nickname,
+                "account_suffix": acc.account_suffix,
+                "account_type": acc.account_type,
+                "created_at": acc.created_at.isoformat(),
+                "checkpoints": [
+                    {
+                        "amount_paise": cp.amount_paise,
+                        "effective_at": cp.effective_at.isoformat(),
+                        "source": cp.source,
+                        "note": cp.note,
+                    }
+                    for cp in acc.checkpoints.all()
+                ],
+            }
+            for acc in user.bank_accounts.all()
+        ],
+        "categories": [
+            {
+                "id": category.id,
+                "name": category.name,
+                "kind": category.kind,
+                "is_default": category.is_default,
+            }
+            for category in Category.objects.filter(owner=user)
+        ],
+        "transactions": [
+            {
+                "id": txn.id,
+                "account_id": txn.account_id,
+                "transfer_id": txn.transfer_id,
+                "occurred_at": txn.occurred_at.isoformat(),
+                "received_at": txn.received_at.isoformat() if txn.received_at else None,
+                "amount_paise": txn.amount_paise,
+                "direction": txn.direction,
+                "category_id": txn.category_id,
+                "category": txn.category.name if txn.category else None,
+                "description": txn.description,
+                "reference": txn.reference,
+                "status": txn.status,
+                "source": txn.source,
+                "dedup_key": txn.dedup_key,
+            }
+            for txn in Transaction.objects.filter(account__owner=user)
+        ],
+        "transfers": [
+            {
+                "id": transfer.id,
+                "from_account_id": transfer.from_account_id,
+                "to_account_id": transfer.to_account_id,
+                "amount_paise": transfer.amount_paise,
+                "occurred_at": transfer.occurred_at.isoformat(),
+                "description": transfer.description,
+                "created_at": transfer.created_at.isoformat(),
+            }
+            for transfer in Transfer.objects.filter(owner=user)
+        ],
+        "planning": {
+            "goals": [
+                {
+                    "id": goal.id,
+                    "name": goal.name,
+                    "target_paise": goal.target_paise,
+                    "saved_paise": goal.saved_paise,
+                    "target_date": goal.target_date.isoformat() if goal.target_date else None,
+                    "is_active": goal.is_active,
+                }
+                for goal in Goal.objects.filter(owner=user)
+            ],
+            "monthly_goals": [
+                {
+                    "id": goal.id,
+                    "month": goal.month.isoformat(),
+                    "savings_paise": goal.savings_paise,
+                }
+                for goal in MonthlyGoal.objects.filter(owner=user)
+            ],
+            "account_goals": [
+                {
+                    "account_id": goal.account_id,
+                    "minimum_floor_paise": goal.minimum_floor_paise,
+                    "target_paise": goal.target_paise,
+                }
+                for goal in AccountGoal.objects.filter(account__owner=user)
+            ],
+            "income_plans": [
+                {
+                    "id": item.id,
+                    "description": item.description,
+                    "amount_paise": item.amount_paise,
+                    "expected_on": item.expected_on.isoformat(),
+                    "status": item.status,
+                    "account_id": item.account_id,
+                    "settled_transaction_id": item.settled_transaction_id,
+                }
+                for item in IncomePlan.objects.filter(owner=user)
+            ],
+            "bills": [
+                {
+                    "id": item.id,
+                    "description": item.description,
+                    "amount_paise": item.amount_paise,
+                    "due_on": item.due_on.isoformat(),
+                    "status": item.status,
+                    "account_id": item.account_id,
+                    "settled_transaction_id": item.settled_transaction_id,
+                }
+                for item in Bill.objects.filter(owner=user)
+            ],
+        },
+        "reports": {
+            "recurring_rules": [
+                {
+                    "id": rule.id,
+                    "merchant_name": rule.merchant_name,
+                    "typical_amount_paise": rule.typical_amount_paise,
+                    "category_id": rule.category_id,
+                    "status": rule.status,
+                }
+                for rule in RecurringPaymentRule.objects.filter(owner=user)
+            ],
+            "monthly_snapshots": [
+                {
+                    "id": snapshot.id,
+                    "year": snapshot.year,
+                    "month": snapshot.month,
+                    "income_paise": snapshot.income_paise,
+                    "expenses_paise": snapshot.expenses_paise,
+                    "savings_paise": snapshot.savings_paise,
+                    "generated_at": snapshot.generated_at.isoformat(),
+                }
+                for snapshot in MonthlyReportSnapshot.objects.filter(owner=user)
+            ],
+        },
+        "coach": {
+            "insights": [
+                {
+                    "id": insight.id,
+                    "title": insight.title,
+                    "kind": insight.kind,
+                    "body": insight.body,
+                    "reason": insight.reason,
+                    "amount_paise": insight.amount_paise,
+                    "time_period": insight.time_period,
+                    "assumptions": insight.assumptions,
+                    "status": insight.status,
+                    "source": insight.source,
+                    "summary_hash": insight.summary_hash,
+                    "created_at": insight.created_at.isoformat(),
+                    "updated_at": insight.updated_at.isoformat(),
+                }
+                for insight in FinancialInsight.objects.filter(owner=user)
+            ],
+            "ai_usage": [
+                {
+                    "day": usage.day.isoformat(),
+                    "calls": usage.calls,
+                }
+                for usage in AIUsage.objects.filter(owner=user)
+            ],
+        },
+        "ingestion": {
+            "device_tokens": [
+                {
+                    "id": token.id,
+                    "name": token.name,
+                    "created_at": token.created_at.isoformat(),
+                    "last_used_at": token.last_used_at.isoformat() if token.last_used_at else None,
+                    "revoked_at": token.revoked_at.isoformat() if token.revoked_at else None,
+                }
+                for token in DeviceToken.objects.filter(owner=user)
+            ],
+            "events": [
+                {
+                    "id": event.id,
+                    "device_token_id": event.device_token_id,
+                    "request_id": event.request_id,
+                    "parser_version": event.parser_version,
+                    "outcome": event.outcome,
+                    "bank": event.bank,
+                    "account_suffix": event.account_suffix,
+                    "direction": event.direction,
+                    "amount_paise": event.amount_paise,
+                    "fingerprint": event.fingerprint,
+                    "created_at": event.created_at.isoformat(),
+                }
+                for event in IngestionEvent.objects.filter(owner=user)
+            ],
+            "capture_requests": [
+                {
+                    "request_id": str(capture.request_id),
+                    "payload_hash": capture.payload_hash,
+                    "result": capture.result,
+                    "created_at": capture.created_at.isoformat(),
+                }
+                for capture in CaptureRequest.objects.filter(owner=user)
+            ],
+        },
+        "export_generated_at": timezone.now().isoformat(),
+    }
+
+    json_content = json.dumps(data, indent=2)
+    filename = f"expensure-data-{user.username}-{today_str}.json"
+    response = HttpResponse(json_content, content_type="application/json")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+
+@login_required
+def delete_account(request):
+    """Full cascade deletion of user and all associated records."""
+    from django.contrib.auth import logout
+
+    if request.method == "POST":
+        confirm_name = request.POST.get("confirm_username", "").strip()
+        if confirm_name == request.user.username:
+            user = request.user
+            logout(request)
+            user.delete()
+            messages.info(request, "Your account and all associated financial records have been permanently deleted.")
+            return redirect("accounts:login")
+        else:
+            messages.error(request, "Username did not match. Deletion cancelled.")
+
+    return render(request, "accounts/delete_account.html")
+
+
+def privacy_info(request):
+    """Public privacy and consent information."""
+    return render(request, "accounts/privacy.html")

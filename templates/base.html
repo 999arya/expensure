@@ -9,6 +9,7 @@
   <script src="{% static 'js/theme.js' %}"></script>
   <title>{% block title %}Expensure{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="stylesheet" href="{% static 'css/refinements.css' %}">
   {% block head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
@@ -16,7 +17,7 @@
 
   <header class="site-header">
     <div class="site-header__brand">
-      <a class="brand" href="{% url 'core:dashboard' %}" aria-label="Expensure home">{% include "partials/brand_logo.html" %}</a>
+      <a class="brand" href="{% url 'core:home' %}" aria-label="Expensure home">{% include "partials/brand_logo.html" %}</a>
     </div>
 
     {% block navigation %}
@@ -28,8 +29,14 @@
           <a href="{% url 'ledger:list' %}"{% if request.resolver_match.app_name == "ledger" %} aria-current="page"{% endif %}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16m-4-4 4 4-4 4M20 16H4m4-4-4 4 4 4"/></svg>Activity
           </a>
-          <a href="{% url 'accounts:add' %}"{% if request.resolver_match.app_name == "accounts" and request.resolver_match.url_name == "add" %} aria-current="page"{% endif %}>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18m-9 3v4m-2-2h4"/></svg>Add account
+          <a href="{% url 'planning:plan' %}"{% if request.resolver_match.app_name == "planning" %} aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M5 8l7-5 7 5M5 8v11h14V8"/><path d="M9 14h6"/></svg>Plan
+          </a>
+          <a href="{% url 'reports:overview' %}"{% if request.resolver_match.app_name == "reports" %} aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Reports
+          </a>
+          <a href="{% url 'coach:home' %}"{% if request.resolver_match.app_name == "coach" %} aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Coach
           </a>
         </nav>
       {% endif %}
@@ -64,10 +71,12 @@
   </main>
 
   {% block footer %}<footer class="site-footer">
-    <p>Balances are estimates. They are built from your last confirmed balance and the transactions recorded since then, not from a live bank connection.</p>
+    <p>Balances are estimates. They are built from your last confirmed balance and the transactions recorded since then, not from a live bank connection. · <a href="{% url 'accounts:privacy' %}" class="text-link">Privacy & Consent</a></p>
   </footer>{% endblock %}
 
   <script src="{% static 'js/cursor.js' %}" defer></script>
+  <script src="{% static 'vendor/gsap/gsap.min.js' %}" defer></script>
   {% block scripts %}{% endblock %}
+  <script src="{% static 'js/navigation.js' %}" defer></script>
 </body>
 </html>
