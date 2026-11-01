@@ -128,3 +128,31 @@ redacted excerpt only when the user explicitly reports a parsing problem.
 
 **Tested by:** Phase 6 tests asserting that ingestion never writes message text
 to the database or the log handler.
+
+---
+
+## 007 — Movements before the last confirmed balance wait for review
+
+**Status:** accepted
+
+A transaction dated at or before the account's latest confirmed checkpoint is
+ambiguous: the bank may already have included it in that figure. It is saved as
+`needs_review` instead of silently moving the estimate, and the user decides at
+`/transactions/review/`:
+
+- **"Already included"** → `posted`. The estimate is unchanged: the checkpoint
+  rule already treats the movement as inside the confirmed figure.
+- **"Ignore"** → `ignored`. Excluded from estimates and reports, kept visible
+  with a muted chip so it can be undone.
+- **"Not included"** → no server action. The honest fix is to confirm the
+  current balance for that account, which re-anchors the estimate from now.
+
+**Why:** guessing produces balances that are wrong in a direction the user
+cannot see. A visible question beats a silent error.
+
+**Cost:** some transactions sit in review until the user decides.
+
+**Tested by:** `StatusRuleTests`, `ReviewPageTests` and `ReviewDecideTests` in
+`ledger/test_review.py`, plus the add-transaction flagging tests in
+`ledger/test_transactions.py` and the live two-width browser check of the
+review flow.

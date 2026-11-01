@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% load money %}
+
+{% block title %}Review transactions · Finance{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">NEEDS YOUR DECISION</p>
+      <h1>Review transactions</h1>
+    </div>
+    <a class="button" href="{% url 'ledger:list' %}">Back to transactions</a>
+  </header>
+
+  {% if review_count %}
+    <p class="muted small">
+      {{ review_count }} transaction{{ review_count|pluralize }} dated at or before
+      your last confirmed balance. The bank may already have counted them — decide
+      so your balance stays honest.
+    </p>
+  {% endif %}
+
+  {% if transactions %}
+    <ul class="txn-list" role="list">
+      {% for txn in transactions %}
+        <li class="txn review-item" data-animate="txn">
+          <span class="txn-icon {% if txn.direction == 'credit' %}txn-icon--credit{% endif %}" aria-hidden="true">{% if txn.direction == 'credit' %}↙{% else %}↗{% endif %}</span>
+          <div class="txn__main">
+            <p class="txn__desc">{{ txn.description }}</p>
+            <p class="muted small">
+              {{ txn.occurred_at|date:"j M, g:i A" }}
+              {% if txn.category %} · {{ txn.category }}{% endif %}
+              · {{ txn.account.nickname }}
+            </p>
+          </div>
+          <div class="txn__side">
+            <p class="txn__amount {% if txn.direction == 'credit' %}is-credit{% else %}is-debit{% endif %}">
+              {% if txn.direction == 'credit' %}+{% else %}−{% endif %}{{ txn.amount_paise|inr }}
+            </p>
+
+            {% with checkpoint=txn.conflict_checkpoint %}
+              {% if checkpoint %}
+                <p class="muted small review-item__conflict">
+                  Dated {{ txn.occurred_at|date:"j M, g:i A" }} — at or before the balance you
+                  confirmed for {{ txn.account.nickname }} on
+                  {{ checkpoint.effective_at|date:"j M, g:i A" }}
+                  ({{ checkpoint.amount_paise|inr }}).
+                </p>
+              {% endif %}
+            {% endwith %}
+
+            <form method="post" action="{% url 'ledger:review_decide' txn.pk %}" class="review-item__actions">
+              {% csrf_token %}
+              <button class="button" type="submit" name="decision" value="approve">Already included</button>
+              <button class="button button--outline" type="submit" name="decision" value="ignore">Ignore</button>
+            </form>
+
+            {% with checkpoint=txn.conflict_checkpoint %}
+              {% if checkpoint %}
+                <p class="muted small review-item__or">
+                  Or <a class="text-link" href="{% url 'accounts:confirm' txn.account.pk %}">confirm the current balance
+                  for {{ txn.account.nickname }}</a> if it was not included.
+                </p>
+              {% endif %}
+            {% endwith %}
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="empty">
+      <p>Nothing waiting for your decision.</p>
+      <p class="muted small">
+        Everything you have recorded is counted in your balances already.
+      </p>
+    </div>
+  {% endif %}
+{% endblock %}

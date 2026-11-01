@@ -10,6 +10,9 @@
       <h1>Transactions</h1>
     </div>
     <a class="button" href="{% url 'ledger:add' %}">Add transaction</a>
+    {% if review_count %}
+      <a class="text-link" href="{% url 'ledger:review' %}">{{ review_count }} review{{ review_count|pluralize }} waiting</a>
+    {% endif %}
   </header>
 
   {% if filters.errors %}

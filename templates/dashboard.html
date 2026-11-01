@@ -64,10 +64,12 @@
     {% if review_count == 1 %}
       <div class="notice" role="status" data-animate="notice">
         <p>1 transaction needs review. It is not counted in your balance yet.</p>
+        <a class="button button--outline" href="{% url 'ledger:review' %}">Decide</a>
       </div>
     {% elif review_count %}
       <div class="notice" role="status" data-animate="notice">
         <p>{{ review_count }} transactions need review. They are not counted in your balance yet.</p>
+        <a class="button button--outline" href="{% url 'ledger:review' %}">Decide</a>
       </div>
     {% endif %}
 

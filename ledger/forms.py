@@ -5,6 +5,7 @@ from accounts.models import BankAccount
 from core.forms import RupeeField
 
 from .models import Category, Transaction
+from .services import status_for_transaction
 
 DATETIME_FORMAT = "%Y-%m-%dT%H:%M"
 
@@ -121,7 +122,9 @@ class TransactionForm(forms.ModelForm):
         transaction = super().save(commit=False)
         transaction.amount_paise = self.cleaned_data["amount"]
         transaction.source = Transaction.Source.MANUAL
-        transaction.status = Transaction.Status.POSTED
+        transaction.status = status_for_transaction(
+            transaction.account, transaction.occurred_at
+        )
 
         if commit:
             transaction.save()

@@ -54,6 +54,7 @@ class Transaction(models.Model):
     class Status(models.TextChoices):
         POSTED = "posted", "Posted"
         NEEDS_REVIEW = "needs_review", "Needs review"
+        IGNORED = "ignored", "Ignored"
 
     class Source(models.TextChoices):
         MANUAL = "manual", "Entered by you"
@@ -117,3 +118,16 @@ class Transaction(models.Model):
 
     def __str__(self):
         return f"{self.description} · {self.amount_paise} paise"
+
+    @property
+    def conflict_checkpoint(self):
+        """The checkpoint this movement falls inside, or None.
+
+        Uses the prefetched checkpoints when available so a review page with
+        many rows stays at one query.
+        """
+        checkpoints = list(self.account.checkpoints.all())
+        if not checkpoints:
+            return None
+        # Meta ordering is -effective_at, -id, so the first is the latest.
+        return checkpoints[0]

@@ -18,7 +18,7 @@ def make_user(username="asha"):
     return User.objects.create_user(username=username, password="test-pass-123")
 
 
-def make_account(owner, nickname="Kotak salary", suffix="4821"):
+def make_account(owner, nickname="Kotak salary", suffix="4821", confirmed_at=None):
     account = BankAccount.objects.create(
         owner=owner,
         bank=BankAccount.Bank.KOTAK,
@@ -28,7 +28,7 @@ def make_account(owner, nickname="Kotak salary", suffix="4821"):
     BalanceCheckpoint.objects.create(
         account=account,
         amount_paise=1_000_000,
-        effective_at=timezone.now(),
+        effective_at=confirmed_at or at(2026, 10, 1),
     )
     return account
 
@@ -128,6 +128,32 @@ class AddTransactionTests(TestCase):
         self.assertEqual(txn.status, Transaction.Status.POSTED)
         self.assertEqual(txn.source, Transaction.Source.MANUAL)
         self.assertEqual(txn.occurred_at, at(2026, 10, 31, 14, 30))
+
+    def test_transaction_before_checkpoint_waits_for_review(self):
+        self.account.checkpoints.update(effective_at=at(2026, 11, 2, 15, 0))
+
+        response = self.client.post(reverse("ledger:add"), self.form_data())
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], reverse("ledger:list"))
+        txn = Transaction.objects.get()
+        self.assertEqual(txn.status, Transaction.Status.NEEDS_REVIEW)
+
+        from django.contrib.messages import get_messages
+
+        texts = [str(message) for message in get_messages(response.wsgi_request)]
+        self.assertTrue(
+            any("waiting for your decision" in text for text in texts)
+        )
+
+    def test_transaction_after_checkpoint_is_posted_at_once(self):
+        self.account.checkpoints.update(effective_at=at(2026, 10, 1))
+
+        response = self.client.post(reverse("ledger:add"), self.form_data())
+
+        self.assertRedirects(response, reverse("ledger:list"))
+        txn = Transaction.objects.get()
+        self.assertEqual(txn.status, Transaction.Status.POSTED)
 
     def test_zero_amount_is_rejected(self):
         response = self.client.post(reverse("ledger:add"), self.form_data(amount="0"))

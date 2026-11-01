@@ -340,6 +340,11 @@ a {
   color: var(--warn-text);
 }
 
+.chip--muted {
+  background: var(--line);
+  color: var(--muted);
+}
+
 .notice {
   margin: var(--space-4) 0 0;
   padding: var(--space-3) var(--space-4);
@@ -411,6 +416,18 @@ a {
   border-radius: var(--radius-sm);
   background: var(--accent);
   color: var(--bg);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.button--outline {
+  display: inline-block;
+  min-height: 44px;
+  padding: 0.65rem 1.1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
   font-weight: 600;
   text-decoration: none;
 }
@@ -1089,6 +1106,43 @@ a {
   font-size: 0.8rem;
   text-decoration: underline;
   text-underline-offset: 0.2em;
+}
+
+/* Review queue actions stack on phones so both buttons stay tappable. */
+@media (max-width: 639px) {
+  .review-item__actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .review-item__actions .button,
+  .review-item__actions .button--outline {
+    width: 100%;
+  }
+
+  .txn__side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-2);
+    max-width: 100%;
+  }
+
+  .review-item .txn__side {
+    width: 170px;
+  }
+
+  .txn__side .button,
+  .txn__side .button--outline {
+    width: 100%;
+  }
+}
+
+/* Let tabbar items shrink below their text on very narrow screens. */
+.tabbar a,
+.tabbar span {
+  min-width: 0;
 }
 
 /* Authentication: a quiet form beside the copper identity. */

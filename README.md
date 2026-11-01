@@ -8,9 +8,9 @@ and transaction capture is not guaranteed to be complete.
 
 ## Status
 
-Phase 3 in progress. Accounts, authentication and manual transactions are done
-(Phase 2). You can now confirm a balance whenever you check your bank app, which
-re-anchors the estimate from that moment. The review queue is next.
+Phase 3 in progress: confirming a balance over time works, and transactions
+that fall before the last confirmed balance wait in a review queue for your
+decision. Pairing transfers across your own accounts is next.
 
 ## Requirements
 
@@ -129,6 +129,7 @@ future is rejected, because a balance cannot be known before it exists.
 | --- | --- |
 | `/transactions/` | Your transactions, newest first, 50 per page |
 | `/transactions/add/` | Record one movement by hand |
+| `/transactions/review/` | Movements waiting for your review decision |
 
 Amounts are typed as text, so `1,23,456.78` and `1234.5` both work and become
 exact integer paise. A transaction is posted the moment you save it, because you
@@ -140,6 +141,22 @@ The list filters on `?from=`, `?to=` (both `YYYY-MM-DD`), `?category=` and
 bad date, someone else's category id — shows a message and returns no rows
 rather than quietly showing everything, so an empty page always means what it
 says. Paging keeps the current filters.
+
+### Review queue
+
+A transaction dated at or before your last confirmed balance for that account
+is ambiguous: the bank may already have counted it in that figure. It is saved
+as `needs_review` and waits for your decision at `/transactions/review/`:
+
+- **Already included** → marked `posted`. Your balance is unchanged: the time
+  rule already treats it as inside the checkpoint.
+- **Ignore** → marked `ignored`. It stays out of your balance and reports,
+  kept visible with a muted chip so it can be undone later.
+- **Not included** → no server action. Confirm the current balance for that
+  account instead; that re-anchors the estimate from now.
+
+The dashboard shows how many transactions are waiting and links straight to
+the queue.
 
 ## Development states
 

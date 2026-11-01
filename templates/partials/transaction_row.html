@@ -13,6 +13,8 @@
     </p>
     {% if txn.status == "needs_review" %}
       <span class="chip chip--warn">Needs review</span>
+    {% elif txn.status == "ignored" %}
+      <span class="chip chip--muted">Ignored</span>
     {% endif %}
   </div>
 </li>
