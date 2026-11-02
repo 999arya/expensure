@@ -19,17 +19,18 @@
       <p>
         Expensure does not connect directly to any banking API, does not have banking login credentials,
         and cannot initiate any money transfers. All balances shown on this platform are estimates
-        calculated from user-confirmed balance checkpoints and manually recorded or SMS-captured movements.
+        calculated from user-confirmed balance checkpoints and movements you recorded by hand or
+        imported from a CSV statement.
       </p>
 
-      <h2>2. SMS Capture & Privacy Guarantees (Decision 006)</h2>
+      <h2>2. Statement Import & Privacy Guarantees (Decision 006)</h2>
       <p>
-        When you set up message ingestion via Apple Shortcuts or manual paste:
+        When you import a Kotak or Bank of Baroda CSV statement:
       </p>
       <ul style="padding-left: 1.25rem;">
-        <li><strong>No raw message bodies are stored:</strong> The server parses the message deterministically, extracts the amount, direction, account suffix and reference, and discards the raw SMS body immediately.</li>
-        <li><strong>Automatic OTP rejection:</strong> Verification codes and OTPs are detected and rejected. They are never recorded or processed.</li>
-        <li><strong>Device tokens:</strong> Ingestion endpoints require pre-authorized device tokens whose secret values are stored hashed (SHA-256) and can be revoked at any time.</li>
+        <li><strong>No statement file is stored:</strong> The server reads the CSV in memory, extracts the date, description, amount, direction and reference, and discards the file immediately.</li>
+        <li><strong>Temporary preview rows:</strong> Normalized rows exist only until you confirm or cancel the import. After that, only counts and batch metadata are kept so you can review or undo the import.</li>
+        <li><strong>Only the last four digits:</strong> The app stores the bank name and last four account digits, never the full account number or net-banking password.</li>
       </ul>
 
       <h2>3. AI Processing Policy</h2>

@@ -45,7 +45,7 @@ Groq's organization-wide quotas are separate from this app limit.
 | [ledger](ledger/) | Transactions, transfers and review queue |
 | [planning](planning/) | Goals, income, bills and spending allowance |
 | [coach](coach/) | Financial calculations, AI requests and usage limits |
-| [ingestion](ingestion/) | Supported-bank SMS parsing and device capture |
+| [ingestion](ingestion/) | CSV statement import, staging and history |
 | [reports](reports/) | Monthly reports, recurring payments and exports |
 | [templates](templates/) | HTML grouped by app; shared layout and partials |
 | [static](static/) | CSS, JavaScript and vendored browser libraries |

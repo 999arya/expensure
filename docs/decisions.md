@@ -105,7 +105,7 @@ credits are excluded from net savings. A transfer records both legs together; a
 single unmatched leg stays `unresolved` and is never treated as income.
 
 **Why:** moving money between your own accounts does not make you richer, and a
-missing leg is more likely a capture gap than a gift.
+missing leg is more likely a recording gap than a gift.
 
 **Cost:** the user has to pair transfers, or accept an unresolved item on the
 dashboard.
@@ -116,22 +116,23 @@ falls before that account's checkpoint.
 
 ---
 
-## 006 — No raw SMS bodies in logs or long-term storage
+## 006 — No raw statement files in logs or long-term storage
 
-**Status:** accepted (implementation in Phase 6)
+**Status:** accepted (Phase 6; revised for CSV import)
 
-Only parsed fields, a parser version and a short fingerprint are retained.
-Message text is not written to application logs. OTP and non-bank messages are
-filtered on the device where possible and rejected server-side regardless.
+CSV statements are parsed in memory. Only normalized fields, a file hash, counts
+and batch metadata are retained. The uploaded file is not written to disk.
+Preview rows exist only until the import is confirmed or cancelled. Row
+descriptions are bank narration text, never credentials or message bodies.
 
-**Why:** SMS bodies contain account details and OTPs, and logs are the easiest
-place for sensitive data to leak.
+**Why:** a statement file contains a full account history and account number,
+and logs are the easiest place for sensitive data to leak.
 
-**Cost:** harder debugging of parser failures. Mitigated by keeping a short,
-redacted excerpt only when the user explicitly reports a parsing problem.
+**Cost:** a parser failure cannot be replayed from the original file; the user
+must upload again. Mitigated by a preview that shows which rows failed and why.
 
-**Tested by:** Phase 6 tests asserting that ingestion never writes message text
-to the database or the log handler.
+**Tested by:** `ingestion/tests/test_statement_import.py`, including staging,
+duplicate detection, confirm/cancel/undo and file-type/size rejection.
 
 ---
 
@@ -160,3 +161,25 @@ cannot see. A visible question beats a silent error.
 `ledger/tests/test_review.py`, plus the add-transaction flagging tests in
 `ledger/tests/test_transactions.py` and the live two-width browser check of the
 review flow.
+
+---
+
+## 008 — Imported statement rows are bank-authoritative
+
+**Status:** accepted
+
+Rows from a CSV statement are treated as already having happened at the bank. A
+row after the latest checkpoint is posted normally. A row before the checkpoint
+is posted for reports but does not move the estimate, because the confirmed
+balance already includes it. A date-only row on the same local day as the
+checkpoint waits for review, because its exact time is unknown.
+
+**Why:** the statement is more reliable than a guessed time, but counting a
+pre-checkpoint row again would double-count it.
+
+**Cost:** importing an old statement adds report history without changing
+today's estimate, which can look surprising. The account page explains which
+checkpoint the estimate is anchored to.
+
+**Tested by:** `StatementPostingTests` in
+`ingestion/tests/test_statement_import.py`.

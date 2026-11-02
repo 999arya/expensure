@@ -27,6 +27,9 @@ See the [project README](../README.md) for setup, configuration and the folder m
 | `/accounts/logout/` | Log out (POST only, as Django 5 requires) |
 | `/accounts/add/` | Add an account and the balance it shows today |
 | `/accounts/<id>/confirm/` | Record the balance the bank shows now |
+| `/accounts/` | Personal details and every bank account in one place |
+| `/accounts/<id>/` | One account's information, checkpoints, activity and imports |
+| `/accounts/<id>/delete/` | Delete one bank account after typing its last four digits |
 
 Passwords go through Django's four validators (similarity, length, common
 password, all-numeric). The starter categories are seeded once per user and are
@@ -96,6 +99,32 @@ as `needs_review` and waits for your decision at `/transactions/review/`:
 The dashboard shows how many transactions are waiting and links straight to
 the queue.
 
+### Statement import
+
+| URL | What it does |
+| --- | --- |
+| `/statements/` | Upload a Kotak or Bank of Baroda CSV statement |
+| `/statements/history/` | Every import, with counts and status |
+| `/statements/<id>/` | One import's details, rows created and undo control |
+
+The CSV is read in memory and never written to disk. The parser finds the
+header row, then reads the transaction date, description, reference, debit,
+credit and balance columns. A row with a date, description and amount is
+normalized to integer paise. Rows that cannot be read are shown in the preview
+with the reason instead of failing the whole file.
+
+Before anything is created you see a preview with three counts: ready rows,
+rows already recorded and rows needing attention. Duplicates are matched by
+bank reference when present, otherwise by account, date, amount, direction and
+description. Confirming creates the ready rows as imported transactions and
+discards the preview rows. Cancelling creates nothing.
+
+A statement is bank-authoritative, so a row dated before the latest checkpoint
+is posted for reports even though it does not change the estimate. The one
+exception is a date-only row on the same local day as the checkpoint: its
+exact time is unknown, so it waits in the review queue. After a confirmed
+import, **Undo this import** deletes only the transactions that batch created.
+
 ### Transfers
 
 A transfer records a debit on one account and a credit on another account you
@@ -110,7 +139,7 @@ If a leg is ever removed, the transfer is shown as unresolved. A credit marked
 with the **Transfer** category but with no matching leg is listed under
 **Unpaired transfer credits** and is never counted as income. Moving money
 between your own accounts cannot make you richer, and a missing leg is far more
-likely a capture gap than a gift.
+likely a recording gap than a gift.
 
 ## Goals and the spending allowance
 
@@ -182,7 +211,7 @@ allowance rules.
 | 3 | Estimated balances, corrections, transfers | Done |
 | 4 | Goals and spending allowance | Done |
 | 5 | Monthly reports and CSV | Done |
-| 6 | SMS parsing, then iPhone capture | Done — experimental capture |
+| 6 | CSV statement import (Kotak, Bank of Baroda) | Done |
 | 7 | AI coach | Done — opt-in and bounded |
 | 8 | Private pilot, Postgres, deployment | In progress |
 
