@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 {% load money %}
 
-{% block title %}Apple Shortcuts Capture · Expensure{% endblock %}
+{% block title %}Phone Message Setup · Expensure{% endblock %}
 
 {% block content %}
   <header class="page-head">
     <div>
-      <p class="eyebrow">IPHONE AUTOMATION</p>
+      <p class="eyebrow">ANDROID &amp; IPHONE</p>
       <h1>Set up transaction capture</h1>
       <p class="muted">
-        Configure an Apple Shortcut on your iPhone to ingest bank transaction SMS automatically.
+        Import bank transaction alerts from your phone, then review them before they affect your balance.
       </p>
     </div>
     <div class="page-head__actions">
@@ -27,36 +27,40 @@
     </div>
   {% endif %}
 
-  <!-- Setup Instructions -->
-  <section class="section" aria-labelledby="guide-heading">
-    <div class="section-head">
-      <h2 id="guide-heading">Guided iPhone Setup</h2>
-      <span class="muted small">APPLE SHORTCUTS INGESTION</span>
-    </div>
+  {% include "partials/message_setup.html" %}
 
-    <div class="card" style="margin-bottom: var(--space-5);">
-      <ol style="padding-left: 1.25rem; line-height: 1.8; margin: 0;">
-        <li>Open the <strong>Shortcuts</strong> app on your iPhone.</li>
-        <li>Tap the <strong>Automation</strong> tab at the bottom, then tap <strong>+</strong> in the top-right.</li>
-        <li>Choose <strong>Message</strong> as the trigger.</li>
-        <li>Under <em>Message Contains</em>, enter: <code>Kotak, debited, credited, Baroda</code>.</li>
-        <li>Select <strong>Run Immediately</strong> and turn off <em>Notify When Run</em>.</li>
-        <li>Tap <strong>Next</strong> and choose <strong>New Blank Automation</strong>.</li>
-        <li>Add the action: <strong>Get Contents of URL</strong>:
-          <ul style="margin-top: 0.25rem; line-height: 1.6;">
-            <li><strong>URL</strong>: <code>{{ request.scheme }}://{{ request.get_host }}{% url 'ingestion:api_ingest' %}</code></li>
-            <li><strong>Method</strong>: <code>POST</code></li>
-            <li><strong>Headers</strong>:
-              <br><code>Authorization</code>: <code>Bearer &lt;your_device_token&gt;</code>
-              <br><code>Content-Type</code>: <code>application/json</code>
-            </li>
-            <li><strong>Request Body</strong>: <code>JSON</code>
-              <br>Add key: <code>message</code> (Type: Text) → select <strong>Shortcut Input</strong>.
-            </li>
-          </ul>
-        </li>
-        <li>Tap <strong>Done</strong>. Whenever a matching bank SMS arrives, your iPhone securely sends it to your ledger!</li>
+  <section class="section" aria-labelledby="connection-heading">
+    <h2 id="connection-heading">Automatic forwarding connection settings</h2>
+    <div class="card">
+      <p>Generate a device token below and keep it private. Each phone should have its own token; revoke it here to stop that phone's access.</p>
+      <dl>
+        <dt>URL</dt><dd style="overflow-wrap: anywhere;"><code>{{ request.scheme }}://{{ request.get_host }}{% url 'ingestion:api_ingest' %}</code></dd>
+        <dt>Method</dt><dd><code>POST</code></dd>
+        <dt>Headers</dt><dd><code>Authorization: Bearer &lt;your_device_token&gt;</code><br><code>Content-Type: application/json</code></dd>
+        <dt>JSON body</dt><dd><code>{"message": "&lt;incoming SMS text&gt;"}</code></dd>
+      </dl>
+      <p class="small">Map the incoming message text into the <code>message</code> field using your app's JSON editor, so quotes and line breaks are escaped correctly. Do not send the placeholder text. If your automation retries, send an optional <code>request_id</code> UUID generated once per message and reuse it for retries.</p>
+      <h3>Android: optional forwarding</h3>
+      <ol>
+        <li>Use an automation app you trust that supports an incoming SMS trigger, custom HTTP headers, and a JSON POST body. Menu names depend on the app; this is a connection recipe, not an installed integration.</li>
+        <li>Grant the SMS permission it needs. Restrict the trigger to your bank's sender and transaction phrases; exclude OTP and verification messages.</li>
+        <li>Configure its HTTP request with the settings above and map the received SMS body to <code>message</code>.</li>
+        <li>Test one supported transaction alert. Check Recent Capture Events below and review the resulting transaction in your ledger.</li>
+        <li>If forwarding stops, check internet access, SMS permissions, and the phone's background/battery restrictions for that app. Manual paste remains available without an extra app.</li>
       </ol>
+      <h3>iPhone: Apple Shortcuts</h3>
+      <ol>
+        <li>Open <strong>Shortcuts &rarr; Automation &rarr; + &rarr; Message</strong>.</li>
+        <li>Choose the bank sender and one <strong>Message Contains</strong> phrase such as <code>debited</code>. Create another automation for <code>credited</code> or other phrases your bank uses. A comma-separated list is not an OR filter.</li>
+        <li>Choose <strong>Run Immediately</strong> if your iOS version offers it; otherwise approve the notification when it runs.</li>
+        <li>Create a blank automation and add <strong>Get Contents of URL</strong>. Enter the URL above, select <strong>POST</strong>, and add the two headers.</li>
+        <li>Set <strong>Request Body</strong> to <strong>JSON</strong>. Add a Text field named <code>message</code> and select the incoming message's text from <strong>Shortcut Input</strong> (Content if offered). Do not type "Shortcut Input" as literal text.</li>
+        <li>Save, test with one transaction alert, and check Recent Capture Events. Review its time, account and category in your ledger. Existing messages must be pasted manually.</li>
+      </ol>
+      <p class="small">Setup reference: <a href="https://support.apple.com/guide/shortcuts/apdd711f9dff/ios">Apple message triggers</a>, <a href="https://support.apple.com/guide/shortcuts/apd58d46713f/ios">Apple web requests</a>, and <a href="https://developer.android.com/reference/android/Manifest.permission#READ_SMS">Android SMS permissions</a>.</p>
+      <h3>If the balance does not change</h3>
+      <p>Capture is only the first step. Open the ledger and resolve pending reviews. Unsupported messages or unmatched accounts are not imported; check the bank name and last four digits. Never change an old transaction's time just to force it into the current balance.</p>
+      <p class="small">If the free server is asleep, the first request may take about a minute. Check capture events before resending. For missed or unsupported messages, enter the transaction manually or confirm the current balance from your bank app.</p>
     </div>
   </section>
 
@@ -73,7 +77,7 @@
         <input
           type="text"
           name="name"
-          placeholder="Device name (e.g. My iPhone 15)"
+          placeholder="Device name (e.g. My Android or iPhone)"
           required
           style="flex: 1; min-width: 200px; padding: 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--surface); color: var(--text);"
         >

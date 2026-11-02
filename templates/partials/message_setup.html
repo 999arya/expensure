@@ -1,0 +1,32 @@
+<section class="signup-group" aria-labelledby="message-setup-heading">
+  <h2 id="message-setup-heading">Keep your balance up to date</h2>
+  <p class="muted small">Entering bank details does not connect your bank or give this website access to your messages. Start with the balance your bank shows now, then import new transactions.</p>
+  <details>
+    <summary>Android instructions</summary>
+    <ol class="small">
+      <li>Save your account first, including the last four digits shown in your bank alerts.</li>
+      <li>In your Messages app, open a transaction SMS, press and hold its text, and copy it.</li>
+      <li>Open Expensure in your browser, choose <strong>Paste message</strong>, paste the text, and preview it. Check the amount, debit or credit, and account before saving.</li>
+      <li>Review the saved transaction and confirm its time and category before it changes your estimated balance.</li>
+    </ol>
+    <p class="small">Optional automatic forwarding requires a separate Android automation app with SMS access and HTTPS POST support. Expensure has no Android SMS reader built in. After saving your account, open <strong>Message setup</strong> for the connection settings.</p>
+  </details>
+  <details>
+    <summary>iPhone / iOS instructions</summary>
+    <ol class="small">
+      <li>Save your account first. You can copy a transaction SMS from Messages and use <strong>Paste message</strong>, just like on Android.</li>
+      <li>For future messages, open Expensure's <strong>Message setup</strong> and generate a device token.</li>
+      <li>In Apple's <strong>Shortcuts → Automation → Message</strong>, select your bank sender and a transaction phrase. Create separate rules for debit and credit phrases.</li>
+      <li>Use <strong>Get Contents of URL</strong> with the URL, authorization header, and JSON body shown in Message setup. Choose <strong>Run Immediately</strong> if available, or approve each run.</li>
+      <li>Check capture events in Expensure, then review each captured transaction before it affects your balance.</li>
+    </ol>
+  </details>
+  <p class="small"><strong>Bank support:</strong> you can track any bank manually. SMS parsing currently supports Kotak and Bank of Baroda message formats; other formats may be rejected. Use manual transaction entry when a message cannot be parsed.</p>
+  <p class="small"><strong>How the estimate works:</strong> your last confirmed balance plus reviewed credits minus reviewed debits after that balance's time. Older transactions are already included; uncertain times need review. Use <strong>Confirm balance</strong> to reconcile with your bank app.</p>
+  <p class="muted small">Only send transaction alerts. Never forward OTPs, PINs, passwords, or unrelated messages. Automatic capture needs internet access; it does not import your old inbox.</p>
+  {% if request.user.is_authenticated %}
+    <p><a href="{% url 'ingestion:paste' %}">Paste message</a> · <a href="{% url 'ingestion:shortcuts' %}">Message setup &amp; device tokens</a></p>
+  {% else %}
+    <p class="muted small">After creating your account, open <strong>Paste message → Message setup</strong> to connect your phone. No setup is required to finish signup.</p>
+  {% endif %}
+</section>
