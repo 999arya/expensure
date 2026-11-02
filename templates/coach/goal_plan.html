@@ -10,5 +10,6 @@
   {% if insight and insight.source != 'ai' %}<p class="muted" role="status">Showing calculated guidance. AI was not used; it may be unavailable or your daily limit may have been reached.</p>{% endif %}
   <form method="post">{% csrf_token %}<p><label><input type="checkbox" name="ai_consent" required> Let Groq AI prioritize these steps using calculated amounts and timing. Your name, goal name, and bank details are not sent.</label></p><button class="button" type="submit">Get AI-prioritized steps</button></form>
 </section>
+<p><a class="button button--outline" href="{% url 'coach:target_review' %}">Adapt target from my history</a></p>
 <div class="landing-actions"><a class="button button--outline" href="{% url 'planning:goal_edit' goal.pk %}">Edit goal</a><a class="button button--outline" href="{% url 'planning:monthly_goal' %}">Set monthly savings</a><a class="button button--outline" href="{% url 'planning:goals' %}">Update progress</a><a class="text-link" href="{% url 'core:dashboard' %}">Back to dashboard</a></div>
 {% endblock %}

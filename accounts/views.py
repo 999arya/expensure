@@ -1,4 +1,6 @@
 from django.contrib import messages
+from django.conf import settings
+from django.contrib.auth.views import PasswordResetView
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -15,6 +17,15 @@ from ledger.defaults import seed_default_categories
 from .forms import BankAccountForm, ConfirmBalanceForm, SignupForm
 from .models import BalanceCheckpoint, BankAccount
 from .services import estimate_balance, latest_checkpoint
+
+
+class ConfiguredPasswordResetView(PasswordResetView):
+    """Avoid promising delivery when the deployment has no email transport."""
+
+    def dispatch(self, request, *args, **kwargs):
+        if not getattr(settings, "PASSWORD_RESET_ENABLED", True):
+            return render(request, "accounts/password_reset_unavailable.html", status=503)
+        return super().dispatch(request, *args, **kwargs)
 
 
 @transaction.atomic
@@ -125,7 +136,7 @@ def export_user_data(request):
     """Download full JSON export of all personal financial data (Phase 8)."""
     import json
     from django.http import HttpResponse
-    from coach.models import AIUsage, FinancialInsight
+    from coach.models import AIUsage, FinancialInsight, TargetRecommendation
     from ingestion.models import CaptureRequest, DeviceToken, IngestionEvent
     from ledger.models import Category, Transaction, Transfer
     from planning.models import AccountGoal, Bill, Goal, IncomePlan, MonthlyGoal
@@ -298,6 +309,7 @@ def export_user_data(request):
                 }
                 for insight in FinancialInsight.objects.filter(owner=user)
             ],
+            "target_recommendations": list(TargetRecommendation.objects.filter(owner=user).values()),
             "ai_usage": [
                 {
                     "day": usage.day.isoformat(),
@@ -346,7 +358,8 @@ def export_user_data(request):
         "export_generated_at": timezone.now().isoformat(),
     }
 
-    json_content = json.dumps(data, indent=2)
+    from django.core.serializers.json import DjangoJSONEncoder
+    json_content = json.dumps(data, indent=2, cls=DjangoJSONEncoder)
     filename = f"expensure-data-{user.username}-{today_str}.json"
     response = HttpResponse(json_content, content_type="application/json")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'

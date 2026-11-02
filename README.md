@@ -73,4 +73,24 @@ Run a single app's tests with `manage.py test accounts.tests`.
 
 - [Application guide](docs/application-guide.md): features, calculations and routes.
 - [Design decisions](docs/decisions.md): financial rules and data integrity.
+- [Render + Neon deployment](docs/deployment.md): free hosting setup and limitations.
 - [Production environment example](.env.example) and [Dockerfile](Dockerfile): deployment configuration.
+
+
+## Adaptive savings targets
+
+From Coach, a goal action plan, or the monthly target form, choose **Adapt target
+from my history**. The app reviews the previous three completed calendar months,
+requires opening-balance coverage and resolved classifications, and excludes
+transfers and unclassified credits from income. Refunds reduce expenses.
+
+The lower of median surplus and latest-month surplus defines a baseline. Cautious
+(60%) and balanced (80%) candidates leave a buffer and are capped by recorded
+current-month forecast capacity. These percentages are product assumptions, not
+an affordability guarantee. With consent, Groq selects one of these calculated
+candidates; local fallback selects cautious. Calls use the shared daily AI budget.
+
+Recommendations show the old and proposed monthly target. Applying one updates
+the monthly plan and keeps an audit record. Stale recommendations are rejected;
+long-term goal amounts and dates are not changed. Audit records are included in
+the personal-data export and deleted with the account.

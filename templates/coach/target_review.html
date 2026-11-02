@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}Adapt your savings target &middot; Expensure{% endblock %}
+{% block content %}
+<header class="page-head"><div><p class="eyebrow">YOUR HISTORY, YOUR NEXT TARGET</p><h1>Adapt your savings target</h1><p class="muted">Review {{ summary.month }} using the previous three completed months. Current target: {{ summary.current_target|inr }}.</p></div></header>
+<section class="card"><h2>Your recorded history</h2>
+{% for row in summary.history %}<div class="section"><h3>{{ row.month }}</h3><p>Income {{ row.income|inr }} &middot; Net expenses {{ row.expenses|inr }} &middot; Surplus {{ row.surplus|inr }}</p>{% for issue in row.issues %}<p class="muted">{{ issue }}</p>{% endfor %}</div>{% endfor %}
+<p class="muted">Transfers and unclassified credits are excluded from income. Refunds reduce expenses. Missing records can change the result.</p></section>
+<section class="section card"><h2>Find a realistic monthly target</h2>
+{% if summary.issues %}{% for issue in summary.issues %}<p class="muted">{{ issue }}</p>{% endfor %}<a class="button button--outline" href="{% url 'ledger:review' %}">Review transactions</a>
+{% else %}<p>Current forecast capacity for additional savings: {{ summary.forecast_capacity|inr }}. This uses recorded balances, expected income and unpaid bills.</p><p>We use the lower of your median monthly surplus and latest month's surplus. The cautious option saves 60% of that amount; the balanced option saves 80%. Both are capped by the current month's forecast capacity.</p><p class="muted">These are planning assumptions, not guaranteed affordable amounts. Expected income may not arrive, and unrecorded expenses may reduce capacity.</p>
+<form method="post">{% csrf_token %}<p><label><input type="checkbox" name="ai_consent"> Let Groq AI choose between the calculated targets using monthly totals. No names, bank details or transaction descriptions are sent.</label></p><button class="button" type="submit">Recommend a target</button></form>{% endif %}
+</section>
+{% if proposal %}<section class="section card" aria-labelledby="proposal-title"><p class="eyebrow">{% if proposal.source == 'ai' %}AI-SELECTED TARGET{% else %}LOCAL CALCULATION{% endif %}</p><h2 id="proposal-title">{{ proposal.previous_paise|inr }} &rarr; {{ proposal.proposed_paise|inr }}</h2><p>{{ proposal.choice|capfirst }} option for {{ proposal.month|date:"F Y" }}.</p><p>Applying this updates your monthly savings target and spending allowance. Your long-term goal amounts and dates stay as you set them.</p>{% if proposal.source != 'ai' %}<p class="muted">AI was not used. Local guidance is available without AI, when it is unavailable, or when the daily limit is reached.</p>{% endif %}
+{% if proposal.previous_paise != proposal.proposed_paise %}<form method="post" action="{% url 'coach:target_apply' proposal.pk %}">{% csrf_token %}<button class="button" type="submit">Apply this monthly target</button></form>{% else %}<p>Your existing target already matches this recommendation.</p>{% endif %}</section>{% endif %}
+{% if changes %}<section class="section"><h2>Recent target changes</h2>{% for change in changes %}<p>{{ change.applied_at }}: {{ change.previous_paise|inr }} &rarr; {{ change.proposed_paise|inr }} for {{ change.month|date:"F Y" }}</p>{% endfor %}</section>{% endif %}
+<div class="landing-actions"><a class="button button--outline" href="{% url 'planning:monthly_goal' %}">Set a target manually</a><a class="text-link" href="{% url 'planning:plan' %}">Back to plan</a></div>
+{% endblock %}

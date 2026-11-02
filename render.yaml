@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: expensure
+    runtime: python
+    plan: free
+    region: singapore
+    branch: main
+    buildCommand: bash scripts/render-build.sh
+    startCommand: bash scripts/render-start.sh
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.8
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.production
+      - key: DJANGO_SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.1-8b-instant
+      - key: AI_DAILY_LIMIT
+        value: "20"
+      - key: DATABASE_SSL_REQUIRE
+        value: "true"
+      - key: TRUST_PROXY_HTTPS
+        value: "true"
+      - key: PASSWORD_RESET_ENABLED
+        value: "false"

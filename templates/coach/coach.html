@@ -19,6 +19,7 @@
     {% for goal in goals %}<div class="card next-step"><div><h3>{{ goal.name }}</h3><p class="muted">{{ goal.saved_paise|inr }} of {{ goal.target_paise|inr }}</p></div><a class="button button--outline" href="{% url 'coach:goal_plan' goal.pk %}">See next steps</a></div>
     {% empty %}<p class="muted">Choose a goal to get a practical action plan.</p><a class="button" href="{% url 'planning:goal_add' %}">Set your first goal</a>{% endfor %}
   </section>
+<p><a class="button button--outline" href="{% url 'coach:target_review' %}">Adapt target from my history</a></p>
   <!-- "Can I afford ₹..." Query Box -->
   <section class="section" aria-labelledby="afford-heading">
     <div class="card" style="border-left: 4px solid var(--accent); margin-bottom: var(--space-5);">
@@ -105,7 +106,7 @@
       </p>
       <ul style="padding-left: 1.25rem; margin: 0; line-height: 1.6;">
         <li>Does not connect directly to banks or read raw message text.</li>
-        <li>Never moves money, changes account balances, or silently alters goals.</li>
+        <li>Never moves money or changes account balances. Monthly target recommendations are applied only when you choose to apply them.</li>
         <li>Calculations work on the server without an AI key. AI can select verified explanations; the Python result always controls the verdict.</li>
       </ul>
     </div>

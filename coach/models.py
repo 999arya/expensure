@@ -55,3 +55,21 @@ class AIUsage(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["owner", "day"], name="ai_usage_owner_day")]
+
+
+class TargetRecommendation(models.Model):
+    """An auditable proposal; applying it is a separate, explicit action."""
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="target_recommendations")
+    month = models.DateField()
+    previous_paise = models.BigIntegerField()
+    proposed_paise = models.BigIntegerField()
+    snapshot = models.JSONField()
+    snapshot_hash = models.CharField(max_length=64)
+    source = models.CharField(max_length=16, choices=FinancialInsight.Source.choices, default="deterministic")
+    choice = models.CharField(max_length=16)
+    created_at = models.DateTimeField(auto_now_add=True)
+    applied_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [models.CheckConstraint(condition=models.Q(proposed_paise__gte=0), name="recommended_target_nonnegative")]

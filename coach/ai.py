@@ -120,3 +120,36 @@ def prioritize_goal_steps(steps, *, allow_ai=False):
     except (OSError, ValueError, KeyError, TypeError, IndexError):
         pass
     return False, steps
+
+
+def choose_history_target(summary, *, allow_ai=False):
+    """Select a server-calculated candidate; never accept a model-created amount."""
+    key = os.environ.get("GROQ_API_KEY", "").strip()
+    if not allow_ai or not key:
+        return False, "cautious"
+    payload = {
+        "model": settings.GROQ_MODEL,
+        "messages": [
+            {"role": "system", "content": "Choose a monthly savings target from the calculated options. Amounts are integer paise. Prefer cautious for declining or variable surplus. Choose balanced only for stable history. Return only JSON: {\"choice\": \"cautious\"} or {\"choice\": \"balanced\"}. Do not calculate new amounts."},
+            {"role": "user", "content": json.dumps(summary)},
+        ],
+        "response_format": {"type": "json_object"},
+        "max_completion_tokens": 100,
+        "store": False,
+    }
+    try:
+        request = urllib.request.Request(
+            "https://api.groq.com/openai/v1/chat/completions", data=json.dumps(payload).encode(),
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json", "User-Agent": "Expensure/1.0"}, method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=5) as response:
+            output = json.loads(response.read(32768))
+        item = output["choices"][0]
+        if item.get("finish_reason") != "stop" or item["message"].get("refusal"):
+            return False, "cautious"
+        parsed = json.loads(item["message"]["content"])
+        if isinstance(parsed, dict) and set(parsed) == {"choice"} and isinstance(parsed["choice"], str) and parsed["choice"] in {"cautious", "balanced"}:
+            return True, parsed["choice"]
+    except (OSError, ValueError, KeyError, TypeError, IndexError):
+        pass
+    return False, "cautious"

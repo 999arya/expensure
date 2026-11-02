@@ -92,3 +92,31 @@ def goal_plan(request, pk):
         insight = goal_guidance(goal, request.POST.get("ai_consent") == "on")
         steps = insight.body.splitlines()
     return render(request, "coach/goal_plan.html", {"goal": goal, "steps": steps, "insight": insight})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def target_review(request):
+    from .history import recommend_target, savings_history
+    from .models import TargetRecommendation
+    proposal = None
+    if request.method == "POST":
+        proposal = recommend_target(request.user, request.POST.get("ai_consent") == "on")
+    return render(request, "coach/target_review.html", {
+        "summary": savings_history(request.user), "proposal": proposal,
+        "changes": TargetRecommendation.objects.filter(owner=request.user, applied_at__isnull=False)[:5],
+    })
+
+
+@login_required
+@require_POST
+def target_apply(request, pk):
+    from .history import apply_target
+    result = apply_target(request.user, pk)
+    if result == "stale":
+        messages.error(request, "Your history or target has changed. Generate a fresh recommendation before applying it.")
+    elif result == "already_applied":
+        messages.info(request, "This recommendation has already been applied.")
+    else:
+        messages.success(request, "Monthly savings target updated. Your spending allowance now reflects it.")
+    return redirect("coach:target_review")

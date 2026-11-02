@@ -173,3 +173,14 @@ class LogoutTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertIn("/accounts/login/", response["Location"])
+
+
+class HostedPasswordResetTests(TestCase):
+    def test_unconfigured_email_shows_unavailable_without_sending(self):
+        from django.core import mail
+        with self.settings(PASSWORD_RESET_ENABLED=False):
+            response = self.client.get(reverse("accounts:password_reset"))
+            self.assertContains(response, "Email recovery is not available yet", status_code=503)
+            response = self.client.post(reverse("accounts:password_reset"), {"email": "person@example.com"})
+            self.assertEqual(response.status_code, 503)
+            self.assertEqual(len(mail.outbox), 0)
