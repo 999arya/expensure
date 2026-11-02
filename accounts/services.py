@@ -23,7 +23,7 @@ class AccountCard:
     suffix: str
     balance_paise: int
     confirmed_at: datetime | None
-    captured_at: datetime | None
+    last_activity_at: datetime | None
 
 
 def estimate_balance(account, checkpoint):
@@ -89,7 +89,7 @@ def account_cards(user):
                 suffix=account.account_suffix,
                 balance_paise=estimate_balance(account, checkpoint),
                 confirmed_at=checkpoint.effective_at if checkpoint else None,
-                captured_at=latest.occurred_at if latest else None,
+                last_activity_at=latest.occurred_at if latest else None,
             )
         )
 

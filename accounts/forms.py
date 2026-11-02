@@ -96,7 +96,7 @@ class BankAccountForm(forms.ModelForm):
         name = " ".join(self.cleaned_data["bank"].split())
         if not name:
             raise forms.ValidationError("Enter your bank's name.")
-        # Keep supported SMS parsers compatible with both old and new accounts.
+        # Keep supported CSV import adapters compatible with both old and new accounts.
         aliases = {
             "kotak": "kotak", "kotak bank": "kotak", "kotak mahindra": "kotak",
             "kotak mahindra bank": "kotak", "bob": "bob", "bank of baroda": "bob",
@@ -186,3 +186,32 @@ class ConfirmBalanceForm(forms.Form):
                 "Choose a time in the past or the present."
             )
         return value
+
+
+class DeleteBankAccountForm(forms.Form):
+    """Delete one bank account after typing its last four digits."""
+
+    confirm_suffix = forms.CharField(
+        label="Type the last four digits to confirm",
+        max_length=4,
+        widget=forms.TextInput(
+            attrs={
+                "inputmode": "numeric",
+                "autocomplete": "off",
+                "placeholder": "1234",
+            }
+        ),
+    )
+
+    def __init__(self, *args, account, **kwargs):
+        self.account = account
+        super().__init__(*args, **kwargs)
+
+    def clean_confirm_suffix(self):
+        value = (self.cleaned_data.get("confirm_suffix") or "").strip()
+        if value != self.account.account_suffix:
+            raise forms.ValidationError(
+                "That does not match the last four digits of this account."
+            )
+        return value
+

@@ -53,7 +53,7 @@ def generate_daily_insight(user):
     version = summary_version(summary, kind="daily")
     amounts = summary["financial_totals_inr"]
     if summary["pending_review"]:
-        title, body = "Review captured movements", "Some movements still need your confirmation. They are excluded from your estimates."
+        title, body = "Review pending movements", "Some movements still need your confirmation. They are excluded from your estimates."
     elif summary["is_partial_period"] or summary["unconfirmed_accounts"]:
         title, body = "Confirm your balance coverage", "Your month-opening balance is incomplete. Confirm balances before relying on the spending forecast."
     elif amounts["cash_backed_allowance_now"] < 0:

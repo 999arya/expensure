@@ -149,14 +149,14 @@ class AccountCardsTests(TestCase):
 
         card = account_cards(self.user)[0]
 
-        self.assertEqual(card.captured_at, newest.occurred_at)
+        self.assertEqual(card.last_activity_at, newest.occurred_at)
 
     def test_card_without_activity_has_no_captured_time(self):
         make_account(self.user)
 
         card = account_cards(self.user)[0]
 
-        self.assertIsNone(card.captured_at)
+        self.assertIsNone(card.last_activity_at)
         self.assertIsNone(card.confirmed_at)
 
     def test_card_shows_bank_display_name(self):

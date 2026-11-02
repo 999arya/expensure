@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load money %}
+
+{% block title %}Delete {{ account.nickname }} · Expensure{% endblock %}
+
+{% block content %}
+  <section class="auth" aria-labelledby="auth-title">
+    <div class="auth-card" style="border-top: 4px solid var(--warn-text);">
+      <p class="eyebrow" style="color: var(--warn-text);">DANGER ZONE</p>
+      <h1 id="auth-title">Delete {{ account.nickname }}?</h1>
+      <p class="muted">
+        This permanently removes {{ account.get_bank_display }} ·••••{{ account.account_suffix }},
+        its balance checkpoints, {{ account.transactions.count }} transaction{{ account.transactions.count|pluralize }}
+        and any statement import history for this account.
+      </p>
+      <p class="muted">
+        Your other accounts, goals and personal details are not affected.
+      </p>
+
+      <div class="notice" role="status">
+        <p>Current estimated balance: <strong>{{ estimate_paise|inr }}</strong></p>
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% for field in form %}
+          {% include "partials/form_field.html" with field=field %}
+        {% endfor %}
+        <button class="button button--full" type="submit" style="background: #e53e3e; color: #fff; margin-top: 1rem;">
+          Permanently delete this account
+        </button>
+      </form>
+
+      <p class="auth-switch">
+        <a href="{% url 'accounts:detail' account.pk %}">Cancel</a>
+      </p>
+    </div>
+  </section>
+{% endblock %}

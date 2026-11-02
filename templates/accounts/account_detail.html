@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% load money %}
+
+{% block title %}{{ account.nickname }} · Expensure{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">BANK ACCOUNT</p>
+      <h1>{{ account.nickname }}</h1>
+      <p class="muted">
+        {{ account.get_bank_display }} · {{ account.get_account_type_display }}
+        · •••• {{ account.account_suffix }}
+      </p>
+    </div>
+    <div class="page-head__actions">
+      <a class="button" href="{% url 'accounts:confirm' account.pk %}">Confirm balance</a>
+      <a class="button button--outline" href="{% url 'ingestion:upload' %}">Import statement</a>
+      <a class="text-link" href="{% url 'accounts:list' %}">All accounts</a>
+    </div>
+  </header>
+
+  <section class="card account-summary" aria-labelledby="balance-heading">
+    <p class="eyebrow">ESTIMATED BALANCE</p>
+    <h2 id="balance-heading" class="amount">{{ estimate_paise|inr }}</h2>
+    <p class="muted small">
+      {% if checkpoint %}
+        From your confirmed balance of {{ checkpoint.amount_paise|inr }}
+        on {{ checkpoint.effective_at|date:"j M Y, g:i A" }}, plus posted
+        movements after it.
+      {% else %}
+        No confirmed balance yet. Confirm one to anchor this estimate.
+      {% endif %}
+    </p>
+    <div class="account-summary__actions">
+      <a class="button button--small" href="{% url 'ledger:add' %}">Add transaction</a>
+      <a class="text-link" href="{% url 'ledger:list' %}?account={{ account.pk }}">See all transactions</a>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="info-heading">
+    <div class="section-head">
+      <h2 id="info-heading">Account information</h2>
+      <span class="muted small">ONLY WHAT YOU ENTERED</span>
+    </div>
+    <div class="card">
+      <dl class="account-info">
+        <div><dt>Bank</dt><dd>{{ account.get_bank_display }}</dd></div>
+        <div><dt>Nickname</dt><dd>{{ account.nickname }}</dd></div>
+        <div><dt>Type</dt><dd>{{ account.get_account_type_display }}</dd></div>
+        <div><dt>Last four digits</dt><dd>•••• {{ account.account_suffix }}</dd></div>
+        <div><dt>Added</dt><dd>{{ account.created_at|date:"j M Y, g:i A" }}</dd></div>
+        <div><dt>Status</dt><dd>{% if account.is_active %}Active{% else %}Inactive{% endif %}</dd></div>
+      </dl>
+      <p class="muted small">
+        The app never stores the full account number and never connects to your bank.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="checkpoints-heading">
+    <div class="section-head">
+      <h2 id="checkpoints-heading">Balance checkpoints</h2>
+      <span class="muted small">{{ checkpoints|length }} SHOWN</span>
+    </div>
+    {% if checkpoints %}
+      <ul class="checkpoint-list" role="list">
+        {% for checkpoint in checkpoints %}
+          <li>
+            <span>
+              <strong>{{ checkpoint.amount_paise|inr }}</strong>
+              <span class="muted small">{{ checkpoint.effective_at|date:"j M Y, g:i A" }}</span>
+            </span>
+            <span class="muted small">{{ checkpoint.get_source_display }}{% if checkpoint.note %} · {{ checkpoint.note }}{% endif %}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty">
+        <p>No confirmed balance yet.</p>
+        <a class="button" href="{% url 'accounts:confirm' account.pk %}">Confirm balance</a>
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="section" aria-labelledby="recent-heading">
+    <div class="section-head">
+      <h2 id="recent-heading">Recent transactions</h2>
+      <a class="text-link" href="{% url 'ledger:list' %}?account={{ account.pk }}">See all</a>
+    </div>
+    {% if transactions %}
+      <ul class="txn-list" role="list">
+        {% for txn in transactions %}
+          {% include "partials/transaction_row.html" with txn=txn %}
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty">
+        <p>No transactions on this account yet.</p>
+        <a class="button" href="{% url 'ledger:add' %}">Add transaction</a>
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="section" aria-labelledby="imports-heading">
+    <div class="section-head">
+      <h2 id="imports-heading">Statement imports</h2>
+      <a class="text-link" href="{% url 'ingestion:history' %}">All imports</a>
+    </div>
+    {% if batches %}
+      <ul class="import-history" role="list">
+        {% for batch in batches %}
+          <li>
+            <a href="{% url 'ingestion:batch_detail' batch.pk %}">
+              <span>
+                <strong>{{ batch.created_at|date:"j M Y, g:i A" }}</strong>
+                <span class="muted small">{{ batch.imported_count }} imported · {{ batch.duplicate_count }} duplicates</span>
+              </span>
+              <span class="chip">{{ batch.get_status_display }}</span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No statements imported for this account yet.</p>
+    {% endif %}
+  </section>
+
+  <section class="section danger-zone" aria-labelledby="danger-heading">
+    <div class="section-head">
+      <h2 id="danger-heading">Delete this account</h2>
+    </div>
+    <div class="card">
+      <p class="muted">
+        Deleting this account removes its checkpoints, transactions and import
+        history. This cannot be undone.
+      </p>
+      <a class="button button--outline" href="{% url 'accounts:delete_bank' account.pk %}">Delete {{ account.nickname }}</a>
+    </div>
+  </section>
+{% endblock %}

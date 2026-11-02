@@ -1,9 +1,9 @@
-from django.contrib import messages
 from django.conf import settings
-from django.contrib.auth.views import PasswordResetView
+from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.views import PasswordResetView
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -14,9 +14,14 @@ from django.views.generic import CreateView
 from core.formatting import format_inr
 from ledger.defaults import seed_default_categories
 
-from .forms import BankAccountForm, ConfirmBalanceForm, SignupForm
+from .forms import (
+    BankAccountForm,
+    ConfirmBalanceForm,
+    DeleteBankAccountForm,
+    SignupForm,
+)
 from .models import BalanceCheckpoint, BankAccount
-from .services import estimate_balance, latest_checkpoint
+from .services import account_cards, estimate_balance, latest_checkpoint
 
 
 class ConfiguredPasswordResetView(PasswordResetView):
@@ -72,6 +77,97 @@ class AddAccountView(LoginRequiredMixin, CreateView):
             f"{self.object.nickname} added. You can record transactions on it now.",
         )
         return response
+
+
+@login_required
+def account_list(request):
+    """Personal details and every bank account in one place."""
+    accounts = (
+        BankAccount.objects.filter(owner=request.user)
+        .prefetch_related("checkpoints")
+        .order_by("bank", "nickname")
+    )
+    rows = []
+    for account in accounts:
+        checkpoint = latest_checkpoint(account)
+        rows.append(
+            {
+                "account": account,
+                "estimate_paise": estimate_balance(account, checkpoint),
+                "confirmed_at": checkpoint.effective_at if checkpoint else None,
+                "transaction_count": account.transactions.count(),
+            }
+        )
+
+    return render(
+        request,
+        "accounts/account_list.html",
+        {"account_rows": rows, "cards": account_cards(request.user)},
+    )
+
+
+@login_required
+def account_detail(request, pk):
+    """One bank account, its balance anchor and recent activity."""
+    account = get_object_or_404(
+        BankAccount,
+        pk=pk,
+        owner=request.user,
+    )
+    checkpoint = latest_checkpoint(account)
+    transactions = account.transactions.select_related("category").order_by(
+        "-occurred_at", "-id"
+    )[:15]
+    checkpoints = account.checkpoints.all()[:10]
+    batches = account.import_batches.select_related("account").order_by(
+        "-created_at", "-id"
+    )[:5]
+
+    return render(
+        request,
+        "accounts/account_detail.html",
+        {
+            "account": account,
+            "checkpoint": checkpoint,
+            "estimate_paise": estimate_balance(account, checkpoint),
+            "transactions": transactions,
+            "checkpoints": checkpoints,
+            "batches": batches,
+        },
+    )
+
+
+@login_required
+def delete_bank_account(request, pk):
+    """Delete one bank account and its recorded movements."""
+    account = get_object_or_404(
+        BankAccount,
+        pk=pk,
+        owner=request.user,
+    )
+
+    if request.method == "POST":
+        form = DeleteBankAccountForm(request.POST, account=account)
+        if form.is_valid():
+            nickname = account.nickname
+            account.delete()
+            messages.success(
+                request,
+                f"{nickname} and its transactions were deleted.",
+            )
+            return redirect("accounts:list")
+    else:
+        form = DeleteBankAccountForm(account=account)
+
+    return render(
+        request,
+        "accounts/delete_bank_account.html",
+        {
+            "account": account,
+            "form": form,
+            "estimate_paise": estimate_balance(account, latest_checkpoint(account)),
+        },
+    )
 
 
 class ConfirmBalanceView(LoginRequiredMixin, View):
@@ -135,9 +231,11 @@ class ConfirmBalanceView(LoginRequiredMixin, View):
 def export_user_data(request):
     """Download full JSON export of all personal financial data (Phase 8)."""
     import json
+
     from django.http import HttpResponse
+
     from coach.models import AIUsage, FinancialInsight, TargetRecommendation
-    from ingestion.models import CaptureRequest, DeviceToken, IngestionEvent
+    from ingestion.models import ImportBatch
     from ledger.models import Category, Transaction, Transfer
     from planning.models import AccountGoal, Bill, Goal, IncomePlan, MonthlyGoal
     from reports.models import MonthlyReportSnapshot, RecurringPaymentRule
@@ -318,43 +416,24 @@ def export_user_data(request):
                 for usage in AIUsage.objects.filter(owner=user)
             ],
         },
-        "ingestion": {
-            "device_tokens": [
-                {
-                    "id": token.id,
-                    "name": token.name,
-                    "created_at": token.created_at.isoformat(),
-                    "last_used_at": token.last_used_at.isoformat() if token.last_used_at else None,
-                    "revoked_at": token.revoked_at.isoformat() if token.revoked_at else None,
-                }
-                for token in DeviceToken.objects.filter(owner=user)
-            ],
-            "events": [
-                {
-                    "id": event.id,
-                    "device_token_id": event.device_token_id,
-                    "request_id": event.request_id,
-                    "parser_version": event.parser_version,
-                    "outcome": event.outcome,
-                    "bank": event.bank,
-                    "account_suffix": event.account_suffix,
-                    "direction": event.direction,
-                    "amount_paise": event.amount_paise,
-                    "fingerprint": event.fingerprint,
-                    "created_at": event.created_at.isoformat(),
-                }
-                for event in IngestionEvent.objects.filter(owner=user)
-            ],
-            "capture_requests": [
-                {
-                    "request_id": str(capture.request_id),
-                    "payload_hash": capture.payload_hash,
-                    "result": capture.result,
-                    "created_at": capture.created_at.isoformat(),
-                }
-                for capture in CaptureRequest.objects.filter(owner=user)
-            ],
-        },
+        "statement_imports": [
+            {
+                "id": batch.id,
+                "account_id": batch.account_id,
+                "bank": batch.bank,
+                "status": batch.status,
+                "original_filename": batch.original_filename,
+                "period_start": batch.period_start.isoformat() if batch.period_start else None,
+                "period_end": batch.period_end.isoformat() if batch.period_end else None,
+                "row_count": batch.row_count,
+                "imported_count": batch.imported_count,
+                "duplicate_count": batch.duplicate_count,
+                "invalid_count": batch.invalid_count,
+                "created_at": batch.created_at.isoformat(),
+                "completed_at": batch.completed_at.isoformat() if batch.completed_at else None,
+            }
+            for batch in ImportBatch.objects.filter(owner=user)
+        ],
         "export_generated_at": timezone.now().isoformat(),
     }
 

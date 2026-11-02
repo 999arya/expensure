@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load money %}
+
+{% block title %}Preview statement import · Expensure{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">CHECK BEFORE IMPORTING</p>
+      <h1>Statement preview</h1>
+      <p class="muted">
+        {{ batch.account.nickname }} · {{ batch.account.get_bank_display }}
+        ····{{ batch.account.account_suffix }}
+        {% if batch.period_start %} · {{ batch.period_start|date:"j M Y" }} to {{ batch.period_end|date:"j M Y" }}{% endif %}
+      </p>
+    </div>
+    <a class="button button--outline" href="{% url 'ingestion:upload' %}">Choose another file</a>
+  </header>
+
+  <section class="card import-summary" aria-labelledby="summary-heading">
+    <h2 id="summary-heading">Found {{ batch.row_count }} row{{ batch.row_count|pluralize }}</h2>
+    <div class="import-counts">
+      <div><span>{{ ready_count }}</span><small>ready</small></div>
+      <div><span>{{ duplicate_count }}</span><small>already recorded</small></div>
+      <div><span>{{ invalid_count }}</span><small>need attention</small></div>
+    </div>
+
+    {% if batch.warning_text %}
+      <div class="notice import-warning" role="status">
+        {% for warning in batch.warning_text.splitlines %}<p>{{ warning }}</p>{% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'ingestion:confirm' batch.pk %}" class="import-actions">
+      {% csrf_token %}
+      <button class="button" type="submit"{% if not ready_count %} disabled{% endif %}>
+        Import {{ ready_count }} transaction{{ ready_count|pluralize }}
+      </button>
+    </form>
+    <form method="post" action="{% url 'ingestion:cancel' batch.pk %}" class="import-actions">
+      {% csrf_token %}
+      <button class="button button--outline" type="submit">Cancel</button>
+    </form>
+    <p class="muted small">
+      The raw file was discarded. Duplicate and unreadable rows will not be imported.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="rows-heading">
+    <div class="section-head">
+      <h2 id="rows-heading">Rows</h2>
+      <span class="muted small">PAGE {{ page_obj.number }} OF {{ page_obj.paginator.num_pages }}</span>
+    </div>
+
+    <ul class="import-rows" role="list">
+      {% for row in rows %}
+        <li class="import-row import-row--{{ row.status }}">
+          <div class="import-row__main">
+            <p class="import-row__date">
+              {% if row.occurred_at %}{{ row.occurred_at|date:"j M Y" }}{% if not row.date_only %} · {{ row.occurred_at|date:"g:i A" }}{% endif %}{% else %}No date{% endif %}
+            </p>
+            <p class="import-row__desc">{{ row.description|default:"No description" }}</p>
+            <p class="muted small">
+              {% if row.reference %}Ref {{ row.reference }}{% else %}No reference{% endif %}
+              {% if row.note %} · {{ row.note }}{% endif %}
+            </p>
+          </div>
+          <div class="import-row__side">
+            {% if row.amount_paise %}
+              <p class="txn__amount {% if row.direction == 'credit' %}is-credit{% else %}is-debit{% endif %}">
+                {% if row.direction == 'credit' %}+{% else %}−{% endif %}{{ row.amount_paise|inr }}
+              </p>
+            {% endif %}
+            <span class="chip {% if row.status == 'invalid' %}chip--warn{% elif row.status == 'duplicate' %}chip--muted{% endif %}">
+              {{ row.get_status_display }}
+            </span>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+
+    {% if page_obj.has_other_pages %}
+      <nav class="pager" aria-label="Preview pages">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+        {% endif %}
+        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}">Next</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  </section>
+{% endblock %}

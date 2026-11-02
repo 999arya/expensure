@@ -106,6 +106,14 @@ class Transaction(models.Model):
         related_name="legs",
         help_text="Set when this movement is one leg of a transfer.",
     )
+    import_batch = models.ForeignKey(
+        "ingestion.ImportBatch",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="transactions",
+        help_text="Set when this movement came from a CSV statement import.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

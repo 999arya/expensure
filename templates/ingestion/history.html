@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load money %}
+
+{% block title %}Import history · Expensure{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">STATEMENT IMPORTS</p>
+      <h1>Import history</h1>
+      <p class="muted">Past CSV imports, counts and undo details.</p>
+    </div>
+    <a class="button" href="{% url 'ingestion:upload' %}">Import statement</a>
+  </header>
+
+  {% if batches %}
+    <ul class="import-history import-history--full" role="list">
+      {% for batch in batches %}
+        <li>
+          <a href="{% url 'ingestion:batch_detail' batch.pk %}">
+            <div class="import-history__row">
+              <span>
+                <strong>{{ batch.account.nickname }}</strong>
+                <span class="muted small"> ····{{ batch.account.account_suffix }} · {{ batch.created_at|date:"j M Y, g:i A" }}</span>
+              </span>
+              <span class="chip {% if batch.status == 'undone' or batch.status == 'cancelled' %}chip--muted{% elif batch.status == 'failed' %}chip--warn{% endif %}">{{ batch.get_status_display }}</span>
+            </div>
+            <div class="import-history__meta muted small">
+              {{ batch.imported_count }} imported · {{ batch.duplicate_count }} duplicates · {{ batch.invalid_count }} needed attention
+              {% if batch.period_start %} · {{ batch.period_start|date:"j M" }}–{{ batch.period_end|date:"j M Y" }}{% endif %}
+              {% if batch.original_filename %} · {{ batch.original_filename }}{% endif %}
+            </div>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+
+    {% if page_obj.has_other_pages %}
+      <nav class="pager" aria-label="Import history pages">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+        {% endif %}
+        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}">Next</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="empty">
+      <p>No statement imports yet.</p>
+      <a class="button" href="{% url 'ingestion:upload' %}">Import a statement</a>
+    </div>
+  {% endif %}
+{% endblock %}

@@ -45,8 +45,10 @@
     <div class="site-account">
       <button class="theme-toggle" type="button" aria-label="Switch to day theme" hidden><span data-theme-icon aria-hidden="true">☀</span><span data-theme-label>Day mode</span></button>
       {% if user.is_authenticated %}
-        <span class="account-avatar" aria-hidden="true">{{ user.get_username|first|upper }}</span>
-        <span class="site-account__name">{{ user.get_username }}</span>
+        <a class="site-account__identity" href="{% url 'accounts:list' %}" aria-label="Your account">
+          <span class="account-avatar" aria-hidden="true">{{ user.get_username|first|upper }}</span>
+          <span class="site-account__name">{{ user.get_username }}</span>
+        </a>
         <form method="post" action="{% url 'accounts:logout' %}">
           {% csrf_token %}
           <button class="link-button" type="submit">Log out</button>

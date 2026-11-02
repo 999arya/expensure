@@ -27,7 +27,9 @@
 
         <button class="button button--full" type="submit">Save account</button>
       </form>
-      {% include "partials/message_setup.html" %}
+      <p class="muted small">
+        After saving, you can import a CSV statement or record a transaction by hand.
+      </p>
 
       <p class="auth-switch">
         <a href="{% url 'core:dashboard' %}">Cancel</a>

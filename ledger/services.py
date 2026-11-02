@@ -1,12 +1,13 @@
-"""Rules shared by manual entry, transfers and later capture.
+"""Rules shared by manual entry, transfers and statement import.
 
-The review-queue rule lives here so manual entry (Phase 3) and SMS capture
-(Phase 6) flag movements identically. Transfers also live here, because a
-paired movement must be created atomically: half a transfer is worse than none.
+The review-queue rule lives here so manual entry and imported rows flag
+ambiguous movements identically. Transfers also live here, because a paired
+movement must be created atomically: half a transfer is worse than none.
 """
 
 from django.db import transaction as db_transaction
 from django.db.models import Count
+from django.utils import timezone
 
 from accounts.services import latest_checkpoint
 from ledger.models import Category, Transaction, Transfer
@@ -26,6 +27,26 @@ def status_for_transaction(account, occurred_at):
     if occurred_at <= checkpoint.effective_at:
         return Transaction.Status.NEEDS_REVIEW
 
+    return Transaction.Status.POSTED
+
+
+def status_for_import(account, occurred_at, date_only):
+    """Status for a bank-statement row.
+
+    A statement is bank-authoritative. Rows before the checkpoint are already
+    inside that balance, so they can be posted for reports without moving the
+    estimate. The one exception is a date-only row on the same local day as
+    the checkpoint: the exact time is unknown, so it waits for review.
+    """
+    checkpoint = latest_checkpoint(account)
+    if checkpoint is None:
+        return Transaction.Status.POSTED
+    if occurred_at > checkpoint.effective_at:
+        return Transaction.Status.POSTED
+    if date_only and timezone.localtime(occurred_at).date() == timezone.localtime(
+        checkpoint.effective_at
+    ).date():
+        return Transaction.Status.NEEDS_REVIEW
     return Transaction.Status.POSTED
 
 

@@ -7,7 +7,7 @@ urlpatterns = [
     path("transactions/", include("ledger.urls")),
     path("plan/", include("planning.urls")),
     path("reports/", include("reports.urls")),
-    path("capture/", include("ingestion.urls")),
+    path("statements/", include("ingestion.urls")),
     path("coach/", include("coach.urls")),
     path("", include("core.urls")),
 ]

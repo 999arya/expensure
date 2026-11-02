@@ -11,7 +11,7 @@ from accounts.models import BankAccount
 
 from .filters import apply_filters, read_filters
 from .forms import TransactionForm, TransferForm
-from .models import Category, Transaction
+from .models import Transaction
 from .services import (
     apply_review_decision,
     review_count,
@@ -90,7 +90,6 @@ def transaction_review(request):
     context = {
         "transactions": transactions,
         "review_count": transactions.count(),
-        "review_categories": Category.objects.filter(owner=request.user),
     }
     return render(request, "ledger/review.html", context)
 
@@ -116,25 +115,11 @@ def review_decide(request, pk):
         messages.error(request, "Choose 'Already included' or 'Ignore'.")
         return redirect("ledger:review")
 
-    if decision == "approve" and txn.source == Transaction.Source.SMS:
-        from django import forms
-        from django.utils import timezone
-        try:
-            occurred_at = forms.DateTimeField().clean(request.POST.get("confirmed_time"))
-            category = Category.objects.get(pk=request.POST.get("category"), owner=request.user)
-            allowed = (Category.Kind.INCOME, Category.Kind.REFUND, Category.Kind.TRANSFER, Category.Kind.OTHER) if txn.direction == "credit" else (Category.Kind.EXPENSE, Category.Kind.TRANSFER, Category.Kind.OTHER)
-            if category.kind not in allowed or occurred_at > timezone.now():
-                raise ValueError
-        except (forms.ValidationError, ValueError, TypeError, Category.DoesNotExist):
-            messages.error(request, "Confirm a valid transaction time and a category matching this movement.")
-            return redirect("ledger:review")
-        txn.occurred_at = occurred_at
-        txn.category = category
     txn.status = apply_review_decision(txn, decision)
     txn.save()
 
     if decision == "approve":
-        messages.success(request, "Movement confirmed. Estimates use its time relative to your last checkpoint." if txn.source == Transaction.Source.SMS else REVIEW_APPROVE_MESSAGE)
+        messages.success(request, REVIEW_APPROVE_MESSAGE)
     else:
         messages.success(request, REVIEW_IGNORE_MESSAGE)
 

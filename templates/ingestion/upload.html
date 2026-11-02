@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Import statement · Expensure{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">BANK STATEMENT IMPORT</p>
+      <h1>Import a statement</h1>
+      <p class="muted">
+        Download a CSV statement from Kotak or Bank of Baroda net banking.
+        The file is read in memory, never stored. Imported rows become
+        transactions you can review, categorise or undo.
+      </p>
+    </div>
+    <div class="page-head__actions">
+      <a class="button button--outline" href="{% url 'ingestion:history' %}">Import history</a>
+      <a class="text-link" href="{% url 'ledger:add' %}">Add one by hand</a>
+    </div>
+  </header>
+
+  <section class="section" aria-labelledby="upload-heading">
+    <div class="section-head">
+      <h2 id="upload-heading">Choose the account and file</h2>
+      <span class="muted small">CSV ONLY · MAX 2 MB</span>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="card" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="form-errors" role="alert">
+          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+      {% endif %}
+      {% for field in form %}
+        {% include "partials/form_field.html" with field=field %}
+      {% endfor %}
+      <button class="button button--full" type="submit">Read statement</button>
+    </form>
+
+    <div class="card import-help">
+      <h3>What happens next</h3>
+      <ol>
+        <li>The app reads the rows and finds the date, description, amount and reference.</li>
+        <li>You see a preview. Rows already recorded on this account are skipped.</li>
+        <li>Confident rows are created as imported transactions. A date-only row on the same day as your confirmed balance waits for review.</li>
+      </ol>
+      <p class="muted small">
+        No bank connection or password is involved. Only the last four account
+        digits are stored, and the raw CSV is discarded immediately.
+      </p>
+    </div>
+  </section>
+
+  {% if recent_batches %}
+    <section class="section" aria-labelledby="recent-heading">
+      <div class="section-head">
+        <h2 id="recent-heading">Recent imports</h2>
+        <a class="text-link" href="{% url 'ingestion:history' %}">See all</a>
+      </div>
+      <ul class="import-history" role="list">
+        {% for batch in recent_batches %}
+          <li>
+            <a href="{% url 'ingestion:batch_detail' batch.pk %}">
+              <span>
+                <strong>{{ batch.account.nickname }}</strong>
+                <span class="muted small">{{ batch.created_at|date:"j M Y, g:i A" }}</span>
+              </span>
+              <span class="chip">{{ batch.get_status_display }}</span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+{% endblock %}

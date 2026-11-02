@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load money %}
+
+{% block title %}Import details · Expensure{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">IMPORT DETAILS</p>
+      <h1>{{ batch.account.nickname }}</h1>
+      <p class="muted">
+        {{ batch.account.get_bank_display }} ····{{ batch.account.account_suffix }}
+        · {{ batch.created_at|date:"j M Y, g:i A" }}
+      </p>
+    </div>
+    <div class="page-head__actions">
+      <a class="button button--outline" href="{% url 'ingestion:upload' %}">Import another</a>
+      <a class="text-link" href="{% url 'ingestion:history' %}">History</a>
+    </div>
+  </header>
+
+  <section class="card import-summary" aria-labelledby="summary-heading">
+    <div class="section-head">
+      <h2 id="summary-heading">{{ batch.get_status_display }}</h2>
+      <span class="chip {% if batch.status == 'undone' or batch.status == 'cancelled' %}chip--muted{% elif batch.status == 'failed' %}chip--warn{% endif %}">
+        {{ batch.get_status_display }}
+      </span>
+    </div>
+
+    <div class="import-counts">
+      <div><span>{{ batch.row_count }}</span><small>rows read</small></div>
+      <div><span>{{ batch.imported_count }}</span><small>imported</small></div>
+      <div><span>{{ batch.duplicate_count }}</span><small>duplicates</small></div>
+      <div><span>{{ batch.invalid_count }}</span><small>needed attention</small></div>
+    </div>
+
+    <dl class="import-meta">
+      <div><dt>Account</dt><dd>{{ batch.account.nickname }} ····{{ batch.account.account_suffix }}</dd></div>
+      <div><dt>File</dt><dd>{{ batch.original_filename|default:"Statement" }}</dd></div>
+      {% if batch.period_start %}<div><dt>Statement period</dt><dd>{{ batch.period_start|date:"j M Y" }} to {{ batch.period_end|date:"j M Y" }}</dd></div>{% endif %}
+      <div><dt>Finished</dt><dd>{% if batch.completed_at %}{{ batch.completed_at|date:"j M Y, g:i A" }}{% else %}—{% endif %}</dd></div>
+    </dl>
+
+    {% if batch.warning_text %}
+      <div class="notice import-warning" role="status">
+        {% for warning in batch.warning_text.splitlines %}<p>{{ warning }}</p>{% endfor %}
+      </div>
+    {% endif %}
+
+    {% if batch.status == 'imported' %}
+      <form method="post" action="{% url 'ingestion:undo' batch.pk %}" onsubmit="return confirm('Remove every transaction created by this import? This cannot be undone.');">
+        {% csrf_token %}
+        <button class="button button--outline" type="submit">Undo this import</button>
+      </form>
+      <p class="muted small">
+        Undo deletes the transactions created by this batch. Transactions you
+        edited or recorded by hand are not touched.
+      </p>
+    {% endif %}
+  </section>
+
+  {% if transactions %}
+    <section class="section" aria-labelledby="transactions-heading">
+      <div class="section-head">
+        <h2 id="transactions-heading">Imported transactions</h2>
+        <span class="muted small">{{ transactions|length }} SHOWN</span>
+      </div>
+      <ul class="txn-list" role="list">
+        {% for txn in transactions %}
+          {% include "partials/transaction_row.html" with txn=txn show_account=True %}
+        {% endfor %}
+      </ul>
+    </section>
+  {% elif batch.status == 'imported' %}
+    <div class="empty">
+      <p>No transactions remain from this import.</p>
+      <p class="muted small">They may have been deleted individually.</p>
+    </div>
+  {% endif %}
+{% endblock %}

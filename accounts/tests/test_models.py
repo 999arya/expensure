@@ -144,10 +144,10 @@ class UserExportAndDeleteTests(TestCase):
         self.assertEqual(payload["accounts"][0]["account_suffix"], "4821")
         self.assertEqual(len(payload["accounts"][0]["checkpoints"]), 1)
 
-    def test_export_contains_all_data_domains_without_device_secret(self):
+    def test_export_contains_all_data_domains_without_file_hash(self):
         from django.urls import reverse
         import json
-        from ingestion.models import DeviceToken
+        from ingestion.models import ImportBatch
         from planning.models import Goal
 
         Goal.objects.create(
@@ -156,7 +156,16 @@ class UserExportAndDeleteTests(TestCase):
             target_paise=500_000,
             saved_paise=100_000,
         )
-        token, raw_token = DeviceToken.create_token(self.user, "Test phone")
+        ImportBatch.objects.create(
+            owner=self.user,
+            account=self.account,
+            bank="kotak",
+            original_filename="october.csv",
+            file_sha256="secret-hash",
+            row_count=12,
+            imported_count=10,
+            duplicate_count=2,
+        )
 
         response = self.client.get(reverse("accounts:export"))
         payload = json.loads(response.content.decode("utf-8"))
@@ -164,9 +173,8 @@ class UserExportAndDeleteTests(TestCase):
         self.assertIn("categories", payload)
         self.assertIn("transfers", payload)
         self.assertEqual(payload["planning"]["goals"][0]["name"], "Emergency fund")
-        self.assertEqual(payload["ingestion"]["device_tokens"][0]["name"], "Test phone")
-        self.assertNotIn("token_hash", payload["ingestion"]["device_tokens"][0])
-        self.assertNotIn(raw_token, response.content.decode("utf-8"))
+        self.assertEqual(payload["statement_imports"][0]["original_filename"], "october.csv")
+        self.assertNotIn("secret-hash", response.content.decode("utf-8"))
 
     def test_delete_account_cancels_on_mismatch(self):
         from django.urls import reverse

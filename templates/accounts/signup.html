@@ -30,7 +30,7 @@
           {% if account_form.non_field_errors %}<div class="form-errors" role="alert">{{ account_form.non_field_errors }}</div>{% endif %}
           {% for field in account_form %}{% include "partials/form_field.html" with field=field %}{% endfor %}
         </fieldset>
-        {% include "partials/message_setup.html" %}
+        <p class="muted small">Next: import a bank statement or record a transaction. You can do either from your dashboard.</p>
         <p class="muted small">Next: open your dashboard, choose a goal, and get steps to work toward it.</p>
         <button class="button button--full" type="submit">Create account</button>
       </form>

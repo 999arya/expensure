@@ -51,12 +51,7 @@
 
             <form method="post" action="{% url 'ledger:review_decide' txn.pk %}" class="review-item__actions">
               {% csrf_token %}
-              {% if txn.source == 'sms' %}
-                <div class="field"><label for="time-{{ txn.pk }}">Confirm transaction time</label><input id="time-{{ txn.pk }}" type="datetime-local" name="confirmed_time" value="{{ txn.occurred_at|date:'Y-m-d\TH:i' }}"></div>
-                <div class="field"><label for="category-{{ txn.pk }}">Confirm classification</label><select id="category-{{ txn.pk }}" name="category"><option value="">Choose a category</option>{% for category in review_categories %}<option value="{{ category.pk }}">{{ category.name }} ({{ category.get_kind_display }})</option>{% endfor %}</select></div>
-                <p class="small muted">Use the bank's actual time. A movement at or before a checkpoint is treated as already included. Transfer categories stay out of income and spending.</p>
-              {% endif %}
-              <button class="button" type="submit" name="decision" value="approve">{% if txn.source == 'sms' %}Confirm movement{% else %}Already included{% endif %}</button>
+              <button class="button" type="submit" name="decision" value="approve">Already included</button>
               <button class="button button--outline" type="submit" name="decision" value="ignore">Ignore</button>
             </form>
 

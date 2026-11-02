@@ -138,13 +138,6 @@ class BankNameTests(TestCase):
         self.assertEqual(BankAccount.objects.count(), 1)
         self.assertContains(response, "already added")
 
-    def test_known_full_name_preserves_sms_matching(self):
-        from ingestion.services import find_matching_account
-        self.client.post(reverse("accounts:add"), VALID_ACCOUNT | {"bank": "Kotak Mahindra Bank"})
-        account, error = find_matching_account(self.user, "kotak", "4821")
-        self.assertEqual(error, "")
-        self.assertEqual(account.get_bank_display(), "Kotak Mahindra Bank")
-
     def test_signup_accepts_custom_bank(self):
         from accounts.tests.test_auth import VALID_SIGNUP
         self.client.logout()

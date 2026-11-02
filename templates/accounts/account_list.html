@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load money %}
+
+{% block title %}Your account · Expensure{% endblock %}
+
+{% block content %}
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">YOUR SPACE</p>
+      <h1>Your account</h1>
+      <p class="muted">
+        Personal details and every bank account in one place. Balances are
+        estimates, never a live bank connection.
+      </p>
+    </div>
+    <div class="page-head__actions">
+      <a class="button button--outline" href="{% url 'accounts:export' %}">Download my data</a>
+      <a class="text-link" href="{% url 'accounts:privacy' %}">Privacy & consent</a>
+    </div>
+  </header>
+
+  <section class="section" aria-labelledby="profile-heading">
+    <div class="section-head">
+      <h2 id="profile-heading">Personal details</h2>
+      <span class="muted small">PRIVATE TO YOU</span>
+    </div>
+    <div class="card profile-card">
+      <dl class="account-info">
+        <div><dt>Name</dt><dd>{{ user.get_full_name|default:user.username }}</dd></div>
+        <div><dt>Username</dt><dd>{{ user.username }}</dd></div>
+        <div><dt>Email</dt><dd>{{ user.email|default:"Not added" }}</dd></div>
+        <div><dt>Member since</dt><dd>{{ user.date_joined|date:"j M Y" }}</dd></div>
+      </dl>
+      <p class="muted small">
+        Want to leave? <a class="text-link" href="{% url 'accounts:delete' %}">Delete your account and all data</a>.
+        You can download an export first.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="bank-accounts-heading">
+    <div class="section-head">
+      <h2 id="bank-accounts-heading">Bank accounts</h2>
+      <div class="section-head__side">
+        <a class="text-link" href="{% url 'ingestion:upload' %}">Import statement</a>
+        <a class="button button--small" href="{% url 'accounts:add' %}">Add account</a>
+      </div>
+    </div>
+
+    {% if account_rows %}
+      <ul class="account-list" role="list">
+        {% for row in account_rows %}
+          <li class="card account-list__item">
+            <div class="account-list__head">
+              <div>
+                <h3>{{ row.account.nickname }}</h3>
+                <p class="muted small">
+                  {{ row.account.get_bank_display }} · {{ row.account.get_account_type_display }}
+                  · •••• {{ row.account.account_suffix }}
+                </p>
+              </div>
+              <span class="chip {% if not row.account.is_active %}chip--muted{% endif %}">
+                {% if row.account.is_active %}Active{% else %}Inactive{% endif %}
+              </span>
+            </div>
+
+            <p class="balance-label">ESTIMATED BALANCE</p>
+            <p class="amount">{{ row.estimate_paise|inr }}</p>
+
+            <dl class="meta">
+              <div><dt>Last confirmed</dt><dd>{% if row.confirmed_at %}{{ row.confirmed_at|date:"j M, g:i A" }}{% else %}—{% endif %}</dd></div>
+              <div><dt>Transactions</dt><dd>{{ row.transaction_count }}</dd></div>
+              <div><dt>Added</dt><dd>{{ row.account.created_at|date:"j M Y" }}</dd></div>
+            </dl>
+
+            <div class="account-list__actions">
+              <a class="button button--small" href="{% url 'accounts:detail' row.account.pk %}">View details</a>
+              <a class="button button--small button--outline" href="{% url 'accounts:confirm' row.account.pk %}">Confirm balance</a>
+              <a class="text-link" href="{% url 'ingestion:upload' %}">Import</a>
+              <a class="text-link account-list__danger" href="{% url 'accounts:delete_bank' row.account.pk %}">Delete</a>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty">
+        <p>No bank accounts yet.</p>
+        <p class="muted small">Add the account whose balance you want to track.</p>
+        <a class="button" href="{% url 'accounts:add' %}">Add your first account</a>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

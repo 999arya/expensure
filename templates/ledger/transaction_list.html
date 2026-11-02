@@ -10,7 +10,7 @@
       <h1>Transactions</h1>
     </div>
     <a class="button" href="{% url 'ledger:add' %}">Add transaction</a>
-    <a class="button button--outline" href="{% url 'ingestion:paste' %}">Set up transaction capture</a>
+    <a class="button button--outline" href="{% url 'ingestion:upload' %}">Import statement</a>
     {% if review_count %}
       <a class="text-link" href="{% url 'ledger:review' %}">{{ review_count }} review{{ review_count|pluralize }} waiting</a>
     {% endif %}
@@ -96,7 +96,7 @@
         <a class="button" href="{% url 'ledger:list' %}">Clear filters</a>
       {% else %}
         <a class="button" href="{% url 'ledger:add' %}">Add transaction</a>
-    <a class="button button--outline" href="{% url 'ingestion:paste' %}">Set up transaction capture</a>
+    <a class="button button--outline" href="{% url 'ingestion:upload' %}">Import statement</a>
       {% endif %}
     </div>
   {% endif %}
