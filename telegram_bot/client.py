@@ -10,15 +10,11 @@ from typing import Any, Optional
 logger = logging.getLogger(__name__)
 
 
-@dataclass
 class BotUser:
-    id: int
-    is_bot: bool
-    first_name: str
-    username: str
-    can_join_groups: bool
-    can_read_all_group_messages: bool
-    supports_inline_queries: bool
+    """Telegram Bot user info (from getMe). Accepts arbitrary extra fields."""
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
 
 class TelegramClient:
@@ -119,11 +115,17 @@ def build_start_keyboard(bot_username: str) -> dict:
 def build_help_text(bot_username: str) -> str:
     return (
         f"🤖 <b>Expensure Bot</b>\n\n"
-        f"Commands:\n"
-        f"• /start — Open the account link page\n"
-        f"• /help — Show this message\n"
-        f"• /whoami — Show your linked account\n"
-        f"• /unlink — Unlink your Telegram account (type <code>/unlink confirm</code>)\n\n"
+        f"🔐 <b>Account</b>\n"
+        f"• /start — Link your Expensure account\n"
+        f"• /whoami — Show linked account\n"
+        f"• /unlink — Unlink Telegram (type <code>/unlink confirm</code>)\n\n"
+        f"📊 <b>Account Info</b>\n"
+        f"• /balance — All account balances\n"
+        f"• /today — Today's transactions\n"
+        f"• /transactions [N] — Recent transactions (default 10, max 50)\n"
+        f"• /plan — Monthly plan summary\n\n"
+        f"❓ <b>Help</b>\n"
+        f"• /help — This message\n\n"
         f"After linking, you'll receive daily briefs and can log expenses from here."
     )
 
