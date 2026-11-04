@@ -15,6 +15,11 @@
     </div>
   {% endif %}
 
+  <p class="auth-switch">
+    Already have an Expensure account?
+    <a href="{% url 'accounts:login' %}?next={% url 'telegram_bot:login' %}">Sign in to connect your existing account</a>.
+  </p>
+
   <form method="post" novalidate>
     {% csrf_token %}
 

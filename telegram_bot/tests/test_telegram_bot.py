@@ -14,16 +14,16 @@ User = get_user_model()
 
 
 class TelegramOAuthStateTests(TestCase):
-    def test_create_for_session_generates_unique_values(self):
-        state1 = TelegramOAuthState.create_for_session("session1", "https://example.com/callback")
-        state2 = TelegramOAuthState.create_for_session("session2", "https://example.com/callback")
+    def test_create_generates_unique_values(self):
+        state1 = TelegramOAuthState.create("https://example.com/callback")
+        state2 = TelegramOAuthState.create("https://example.com/callback")
         self.assertNotEqual(state1.state, state2.state)
         self.assertNotEqual(state1.nonce, state2.nonce)
         self.assertNotEqual(state1.code_verifier, state2.code_verifier)
 
     def test_pkce_challenge_is_s256(self):
         state = TelegramOAuthState.objects.create(
-            session_key="test", state="s", nonce="n", code_verifier="verifier", redirect_uri="https://example.com"
+            state="s", nonce="n", code_verifier="verifier", redirect_uri="https://example.com"
         )
         challenge = state.pkce_challenge()
         import hashlib, base64
@@ -32,7 +32,7 @@ class TelegramOAuthStateTests(TestCase):
 
     def test_consume_marks_used(self):
         state = TelegramOAuthState.objects.create(
-            session_key="test", state="valid_state", nonce="nonce", code_verifier="verifier", redirect_uri="https://example.com"
+            state="valid_state", nonce="nonce", code_verifier="verifier", redirect_uri="https://example.com"
         )
         consumed = TelegramOAuthState.consume("valid_state")
         self.assertIsNotNone(consumed)
@@ -40,7 +40,7 @@ class TelegramOAuthStateTests(TestCase):
 
     def test_consume_rejects_reused(self):
         state = TelegramOAuthState.objects.create(
-            session_key="test", state="valid_state", nonce="nonce", code_verifier="verifier", redirect_uri="https://example.com"
+            state="valid_state", nonce="nonce", code_verifier="verifier", redirect_uri="https://example.com"
         )
         TelegramOAuthState.consume("valid_state")
         consumed = TelegramOAuthState.consume("valid_state")
@@ -109,6 +109,9 @@ class TelegramClientTests(TestCase):
 )
 class TelegramWebhookTests(TestCase):
     def setUp(self):
+        bot_patch = patch("telegram_bot.webhook.TelegramClient")
+        bot_patch.start().return_value.get_me.return_value.username = "testbot"
+        self.addCleanup(bot_patch.stop)
         self.client = Client()
         self.webhook_url = reverse("telegram_bot:webhook")
         self.secret = "test-secret"

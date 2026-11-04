@@ -59,7 +59,6 @@ class TelegramLoginView(View):
 
         # Create state in database (keyed by state, not session)
         state_row = TelegramOAuthState.create(_build_redirect_uri(request))
-        code_verifier, code_challenge = _generate_pkce()
 
         # Build authorization URL
         scope = "openid profile"
@@ -69,6 +68,7 @@ class TelegramLoginView(View):
             "response_type": "code",
             "scope": scope,
             "state": state_row.state,
+            "nonce": state_row.nonce,
             "code_challenge": state_row.pkce_challenge(),
             "code_challenge_method": "S256",
         }

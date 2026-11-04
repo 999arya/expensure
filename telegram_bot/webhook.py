@@ -113,6 +113,10 @@ class TelegramWebhookView(View):
                 tg_account = TelegramAccount.objects.select_related("user").get(
                     telegram_user_id=telegram_user_id, is_active=True
                 )
+                # Only trust chat IDs from authenticated, private webhook messages.
+                if tg_account.chat_id != chat_id:
+                    tg_account.chat_id = chat_id
+                    tg_account.save(update_fields=["chat_id"])
                 is_linked = True
             except TelegramAccount.DoesNotExist:
                 is_linked = False

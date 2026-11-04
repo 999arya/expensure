@@ -1,6 +1,8 @@
 """Telegram OIDC authentication: ID token verification and user linking."""
 import json
 import logging
+import time
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from typing import Optional
