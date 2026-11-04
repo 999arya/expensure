@@ -77,10 +77,9 @@ class TelegramUpdate(models.Model):
 
 
 class TelegramOAuthState(models.Model):
-    """Server-side storage for OIDC state/nonce/PKCE. Tied to the Django session."""
+    """Server-side storage for OIDC state/nonce/PKCE. Keyed by state for direct lookup."""
 
-    session_key = models.CharField(max_length=40, db_index=True)
-    state = models.CharField(max_length=64)
+    state = models.CharField(max_length=64, primary_key=True)
     nonce = models.CharField(max_length=64)
     code_verifier = models.CharField(max_length=128)
     redirect_uri = models.CharField(max_length=512)
@@ -88,7 +87,7 @@ class TelegramOAuthState(models.Model):
     used_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        indexes = [models.Index(fields=["state"]), models.Index(fields=["session_key"])]
+        indexes = [models.Index(fields=["created_at"])]
 
     def mark_used(self):
         self.used_at = timezone.now()
@@ -100,7 +99,7 @@ class TelegramOAuthState(models.Model):
         from django.db import transaction
         try:
             with transaction.atomic():
-                row = cls.objects.select_for_update().get(state=state)
+                row = cls.objects.select_for_update().get(pk=state)
                 if row.used_at is not None:
                     return None
                 row.mark_used()
@@ -109,14 +108,13 @@ class TelegramOAuthState(models.Model):
             return None
 
     @classmethod
-    def create_for_session(cls, session_key: str, redirect_uri: str):
+    def create(cls, redirect_uri: str):
         """Generate cryptographically random state, nonce, and PKCE verifier."""
         import secrets
         state = secrets.token_urlsafe(32)
         nonce = secrets.token_urlsafe(32)
         code_verifier = secrets.token_urlsafe(64)
         return cls.objects.create(
-            session_key=session_key,
             state=state,
             nonce=nonce,
             code_verifier=code_verifier,

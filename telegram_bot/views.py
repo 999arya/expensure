@@ -57,30 +57,19 @@ class TelegramLoginView(View):
             messages.error(request, "Telegram login is not configured.")
             return redirect("accounts:login")
 
-        # Generate state, nonce, and PKCE
-        import secrets
-        state = secrets.token_urlsafe(32)
-        nonce = secrets.token_urlsafe(32)
+        # Create state in database (keyed by state, not session)
+        state_row = TelegramOAuthState.create(_build_redirect_uri(request))
         code_verifier, code_challenge = _generate_pkce()
-
-        # Store in session (more reliable than DB on Render)
-        request.session["telegram_oidc"] = {
-            "state": state,
-            "nonce": nonce,
-            "code_verifier": code_verifier,
-            "redirect_uri": _build_redirect_uri(request),
-        }
-        request.session.save()
 
         # Build authorization URL
         scope = "openid profile"
         params = {
             "client_id": client_id,
-            "redirect_uri": request.session["telegram_oidc"]["redirect_uri"],
+            "redirect_uri": state_row.redirect_uri,
             "response_type": "code",
             "scope": scope,
-            "state": state,
-            "code_challenge": code_challenge,
+            "state": state_row.state,
+            "code_challenge": state_row.pkce_challenge(),
             "code_challenge_method": "S256",
         }
         auth_url = "https://oauth.telegram.org/auth?" + urllib.parse.urlencode(params)
@@ -111,24 +100,20 @@ class TelegramCallbackView(View):
             messages.error(request, "Invalid callback: missing state or code.")
             return redirect("accounts:login")
 
-        # Retrieve OIDC data from session
-        oidc_data = request.session.get("telegram_oidc")
-        if not oidc_data or oidc_data.get("state") != state:
+        # Consume state from database (keyed by state)
+        state_row = TelegramOAuthState.consume(state)
+        if not state_row:
             messages.error(request, "Invalid or expired login session. Please try again.")
             return redirect("accounts:login")
-
-        # Clear OIDC data from session (one-time use)
-        del request.session["telegram_oidc"]
-        request.session.save()
 
         # Exchange code for tokens
         try:
             tokens = exchange_code_for_tokens(
                 code=code,
-                code_verifier=oidc_data["code_verifier"],
+                code_verifier=state_row.code_verifier,
                 client_id=client_id,
                 client_secret=client_secret,
-                redirect_uri=oidc_data["redirect_uri"],
+                redirect_uri=state_row.redirect_uri,
             )
         except TelegramOIDCError as e:
             logger.error("Token exchange failed: %s", e)
@@ -142,7 +127,7 @@ class TelegramCallbackView(View):
 
         # Verify ID token
         try:
-            user_info = verify_id_token(id_token, client_id, oidc_data["nonce"])
+            user_info = verify_id_token(id_token, client_id, state_row.nonce)
         except TelegramOIDCError as e:
             logger.error("ID token verification failed: %s", e)
             messages.error(request, "Login verification failed. Please try again.")
