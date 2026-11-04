@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'reports',
     'ingestion',
     'coach',
+    'telegram_bot',
 ]
 
 MIDDLEWARE = [
@@ -165,3 +166,12 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
 AI_DAILY_LIMIT = int(os.environ.get("AI_DAILY_LIMIT", "20"))
 DATA_UPLOAD_MAX_MEMORY_SIZE = 65536
+
+
+# Telegram Bot (Phase 1: Login only)
+# Configure via environment variables; all optional to allow running without Telegram.
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+TELEGRAM_CLIENT_ID = os.environ.get("TELEGRAM_CLIENT_ID", "").strip()
+TELEGRAM_CLIENT_SECRET = os.environ.get("TELEGRAM_CLIENT_SECRET", "").strip()
+TELEGRAM_WEBHOOK_URL = os.environ.get("TELEGRAM_WEBHOOK_URL", "").strip()
+TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "").strip()

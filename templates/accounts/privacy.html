@@ -52,4 +52,24 @@
       </div>
     </div>
   </section>
+
+  <section class="section">
+    <div class="card" style="line-height: 1.8; margin-bottom: var(--space-4);">
+      <h2>5. Telegram Bot (Optional)</h2>
+      <p>
+        Expensure offers an optional Telegram bot for receiving daily briefs and logging expenses from Telegram.
+        You control this entirely:
+      </p>
+      <ul style="padding-left: 1.25rem;">
+        <li><strong>Explicit opt-in:</strong> The bot only sends messages after you link your Telegram account through the <a href="{% url 'telegram_bot:settings' %}">Telegram settings page</a> or via the bot's <code>/start</code> command.</li>
+        <li><strong>Login via Telegram OIDC:</strong> Linking uses Telegram's OpenID Connect flow. We receive your Telegram user ID, display name, and @username. We do <strong>not</strong> receive your phone number, email, or any private chats.</li>
+        <li><strong>Message privacy:</strong> The bot never stores the text of your messages or commands. Webhook updates are deduplicated by Telegram's <code>update_id</code> only; no financial content is logged.</li>
+        <li><strong>Shared data, shared consent:</strong> The bot uses the same database as the web app. Your daily AI brief consent, daily AI budget (<code>AI_DAILY_LIMIT</code>), and all financial rules are identical.</li>
+        <li><strong>Unlink anytime:</strong> Use <code>/unlink confirm</code> in the bot or the <a href="{% url 'telegram_bot:settings' %}">settings page</a> to unlink. Your Expensure data is unchanged.</li>
+      </ul>
+      <p class="muted small">
+        Telegram is a third-party service. By linking, you acknowledge that your Telegram display name and user ID are shared with Expensure, and that messages sent by the bot travel through Telegram's infrastructure.
+      </p>
+    </div>
+  </section>
 {% endblock %}

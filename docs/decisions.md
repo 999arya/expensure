@@ -183,3 +183,29 @@ checkpoint the estimate is anchored to.
 
 **Tested by:** `StatementPostingTests` in
 `ingestion/tests/test_statement_import.py`.
+
+---
+
+## 008 — Telegram Bot for Login (Phase 1)
+
+**Status:** provisional
+
+Expensure offers an optional Telegram bot for user login and account linking.
+Phase 1 covers only identity: users can create or connect an Expensure account
+through Telegram's OpenID Connect flow, then use the web app normally.
+
+**Why:** Telegram is widely used in India. Login via Telegram reduces friction
+(no password to remember) and enables future features (daily briefs, expense
+logging from chat). OIDC is the current supported flow; the legacy iframe widget
+is deprecated.
+
+**Cost:** Adds `PyJWT[crypto]` dependency for ID token verification. Requires
+BotFather configuration (Client ID/Secret, allowed URLs, webhook secret).
+Webhook endpoint must be publicly reachable (HTTPS). Render Free sleeps, so
+the first request after idle may be slow.
+
+**Tested by:** `TelegramOAuthStateTests`, `TelegramWebhookTests`,
+`TelegramAuthTests` in `telegram_bot/tests/test_telegram_bot.py`.
+
+**Future phases** (not yet implemented): expense logging, daily briefs,
+planning commands, month-end totals.

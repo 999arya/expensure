@@ -1,0 +1,41 @@
+{% extends "accounts/auth_base.html" %}
+
+{% block title %}Telegram settings · Expensure{% endblock %}
+
+{% block auth_content %}
+  <p class="eyebrow">TELEGRAM</p>
+  <h1 id="auth-title">Telegram connection</h1>
+
+  {% if messages %}
+    <div class="messages" role="alert">
+      {% for message in messages %}
+        <p class="message message--{{ message.tags }}">{{ message }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if tg_account %}
+    <div class="card">
+      <p><strong>Status:</strong> <span class="status status--active">Linked</span></p>
+      <p><strong>Telegram name:</strong> {{ tg_account.display_name }}</p>
+      {% if tg_account.username %}<p><strong>@username:</strong> @{{ tg_account.username }}</p>{% endif %}
+      <p><strong>Linked:</strong> {{ tg_account.linked_at|date:"d M Y, H:i" }}</p>
+      <p><strong>Last login:</strong> {{ tg_account.last_login_at|date:"d M Y, H:i"|default:"—" }}</p>
+
+      <form method="post" action="{% url 'telegram_bot:unlink' %}" onsubmit="return confirm('Unlink your Telegram account? Your Expensure data will not be affected.');">
+        {% csrf_token %}
+        <input type="hidden" name="confirm" value="yes">
+        <button class="button button--secondary button--full" type="submit">Unlink Telegram</button>
+      </form>
+    </div>
+  {% else %}
+    <div class="card">
+      <p class="muted">No Telegram account linked.</p>
+      <a href="{% url 'telegram_bot:login' %}" class="button button--full">Link Telegram account</a>
+    </div>
+  {% endif %}
+
+  <p class="auth-switch">
+    <a href="{% url 'core:dashboard' %}">← Back to dashboard</a>
+  </p>
+{% endblock %}

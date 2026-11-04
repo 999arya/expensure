@@ -9,5 +9,6 @@ urlpatterns = [
     path("reports/", include("reports.urls")),
     path("statements/", include("ingestion.urls")),
     path("coach/", include("coach.urls")),
+    path("telegram/", include("telegram_bot.urls")),
     path("", include("core.urls")),
 ]

@@ -59,6 +59,9 @@ body { -webkit-font-smoothing: antialiased; }
 .auth-page .button--full { border-radius: 100px; }
 .auth-page .auth-card > .muted { line-height: 1.7; }
 .auth-art .sculpture { opacity: .85; }
+
+.auth-divider { display: flex; align-items: center; gap: 16px; margin: 28px 0; color: var(--muted); font-size: 12px; }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--ui-edge); }
 .auth-note { line-height: 1.7; }
 .allowance { position: relative; overflow: hidden; border-top: 2px solid var(--accent); }
 .allowance__amount { font-size: clamp(36px, 6vw, 76px); line-height: 1.15; letter-spacing: -.055em; padding-block: 14px; overflow-wrap: anywhere; }

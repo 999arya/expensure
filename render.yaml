@@ -29,3 +29,14 @@ services:
         value: "true"
       - key: PASSWORD_RESET_ENABLED
         value: "false"
+      # Telegram Bot (Phase 1: Login only)
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CLIENT_ID
+        sync: false
+      - key: TELEGRAM_CLIENT_SECRET
+        sync: false
+      - key: TELEGRAM_WEBHOOK_URL
+        sync: false
+      - key: TELEGRAM_WEBHOOK_SECRET
+        sync: false
