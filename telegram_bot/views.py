@@ -48,8 +48,13 @@ class TelegramLoginView(View):
             messages.error(request, "Telegram login is not configured.")
             return redirect("accounts:login")
 
+        # Ensure session exists and has a key
+        if not request.session.session_key:
+            request.session.save()
+        session_key = request.session.session_key
+
         # Create state/nonce/PKCE and store in DB keyed by session
-        state_row = TelegramOAuthState.create_for_session(request.session.session_key, _build_redirect_uri(request))
+        state_row = TelegramOAuthState.create_for_session(session_key, _build_redirect_uri(request))
 
         # Build authorization URL
         scope = "openid profile telegram:bot_access"
