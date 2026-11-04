@@ -57,7 +57,9 @@ class TelegramLoginView(View):
         state_row = TelegramOAuthState.create_for_session(session_key, _build_redirect_uri(request))
 
         # Build authorization URL
-        scope = "openid profile telegram:bot_access"
+        # telegram:bot_access requires user to have started the bot first.
+        # Use openid profile for login; bot access can be requested later if needed.
+        scope = "openid profile"
         params = {
             "client_id": client_id,
             "redirect_uri": state_row.redirect_uri,
