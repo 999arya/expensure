@@ -210,7 +210,8 @@ class TelegramAuthTests(TestCase):
         mock_decode.return_value = {
             "iss": "https://oauth.telegram.org",
             "aud": "123456789",
-            "sub": "987654321",
+            "sub": "1234123412341234123",
+            "id": 987654321,
             "exp": 9999999999,
             "iat": 1000000000,
             "nonce": "test-nonce",

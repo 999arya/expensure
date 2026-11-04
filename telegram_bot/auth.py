@@ -28,6 +28,7 @@ class TelegramUserInfo:
     username: str
     first_name: str
     last_name: str
+    oidc_subject: str = ""
 
 
 class TelegramOIDCError(Exception):
@@ -104,15 +105,23 @@ def verify_id_token(id_token: str, client_id: str, expected_nonce: str) -> Teleg
         raise TelegramOIDCError("Nonce mismatch")
 
     # Extract user info
-    telegram_user_id = payload.get("sub") or payload.get("id")
-    if not telegram_user_id:
-        raise TelegramOIDCError("Token missing user identifier")
+    # OIDC subjects are not Bot API user IDs. The profile scope supplies id.
+    telegram_user_id = payload.get("id")
+    if isinstance(telegram_user_id, bool) or not isinstance(telegram_user_id, (int, str)):
+        raise TelegramOIDCError("Token missing Telegram profile ID")
+    try:
+        telegram_user_id = int(telegram_user_id)
+    except (ValueError, TypeError):
+        raise TelegramOIDCError("Invalid Telegram profile ID")
+    if not 0 < telegram_user_id < 2**63:
+        raise TelegramOIDCError("Invalid Telegram profile ID")
 
     return TelegramUserInfo(
         telegram_user_id=int(telegram_user_id),
         username=payload.get("preferred_username", ""),
         first_name=payload.get("given_name") or payload.get("first_name", ""),
         last_name=payload.get("family_name") or payload.get("last_name", ""),
+        oidc_subject=str(payload["sub"]),
     )
 
 
@@ -161,6 +170,8 @@ def link_or_create_user(request, user_info: TelegramUserInfo) -> tuple[TelegramA
     # Try to find existing link
     try:
         tg_account = TelegramAccount.objects.select_related("user").get(telegram_user_id=user_info.telegram_user_id)
+        if request.user.is_authenticated and tg_account.user_id != request.user.pk:
+            raise TelegramOIDCError("This Telegram identity is already connected to another account.")
         # Update profile snapshot
         tg_account.update_profile(
             username=user_info.username,
@@ -173,6 +184,18 @@ def link_or_create_user(request, user_info: TelegramUserInfo) -> tuple[TelegramA
 
     # Check if the current session already has a logged-in user
     if request.user.is_authenticated:
+        existing = TelegramAccount.objects.filter(user=request.user).first()
+        if existing:
+            # Repair the old sub-as-id mapping only for an authenticated owner
+            # whose freshly verified subject matches the stored value.
+            if str(existing.telegram_user_id) != user_info.oidc_subject:
+                raise TelegramOIDCError("Unlink your current Telegram account in settings before connecting another.")
+            existing.telegram_user_id = user_info.telegram_user_id
+            existing.chat_id = None
+            existing.save(update_fields=["telegram_user_id", "chat_id"])
+            existing.update_profile(username=user_info.username, first_name=user_info.first_name,
+                                    last_name=user_info.last_name)
+            return existing, False
         # Link to the current user
         tg_account = TelegramAccount.objects.create(
             user=request.user,
@@ -182,6 +205,12 @@ def link_or_create_user(request, user_info: TelegramUserInfo) -> tuple[TelegramA
             last_name=user_info.last_name,
         )
         return tg_account, False
+
+    # Old links need an authenticated website session to repair safely.
+    subject = user_info.oidc_subject
+    if subject.isascii() and subject.isdigit() and len(subject) <= 19 and int(subject) < 2**63:
+        if TelegramAccount.objects.filter(telegram_user_id=int(subject)).exists():
+            raise TelegramOIDCError("Sign in to your existing Expensure account, then connect Telegram again to repair the link.")
 
     # No existing link and no logged-in user -> need to create a new user
     # We can't create the user here because we need email from the completion page.

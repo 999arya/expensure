@@ -5,6 +5,9 @@
 {% block auth_content %}
       <p class="eyebrow">WELCOME BACK</p>
       <h1 id="auth-title">Log in</h1>
+      {% for message in messages %}
+        <p class="message message--{{ message.tags }}" role="alert">{{ message }}</p>
+      {% endfor %}
       <p class="muted">Your accounts and transactions, in one place.</p>
 
       <form method="post" novalidate>

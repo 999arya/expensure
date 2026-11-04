@@ -305,8 +305,8 @@ class TelegramWebhookView(View):
 
         lines = ["📊 <b>Monthly Plan</b>\n"]
         lines.append(f"💵 <b>Cash-backed allowance:</b> <code>{format_inr(allowance.cash_backed_paise)}</code>")
-        lines.append(f"📈 <b>Forecast allowance:</b> <code>{format_inr(allowance.forecast_allowance_paise)}</code>")
-        lines.append(f"💰 <b>Daily safe-to-spend:</b> <code>{format_inr(allowance.daily_paise)}</code>/day")
+        lines.append(f"📈 <b>Forecast allowance:</b> <code>{format_inr(allowance.allowance_paise)}</code>")
+        lines.append(f"💰 <b>Daily safe-to-spend:</b> <code>{format_inr(allowance.per_day_paise)}</code>/day")
 
         if allowance.income_paise or allowance.bills_paise:
             lines.append(f"\n💵 Expected income: <code>{format_inr(allowance.income_paise)}</code>")
@@ -323,7 +323,8 @@ class TelegramWebhookView(View):
             elif days_left is not None:
                 lines.append(f"   ⚠️ Target date passed")
 
-        if allowance.pending_review_count:
-            lines.append(f"\n⏳ <b>{allowance.pending_review_count} transactions need review</b> — check the web app.")
+        pending_review_count = Transaction.objects.filter(account__owner=tg_account.user, status=Transaction.Status.NEEDS_REVIEW).count()
+        if pending_review_count:
+            lines.append(f"\n⏳ <b>{pending_review_count} transactions need review</b> — check the web app.")
 
         client.send_message(chat_id, "\n".join(lines))

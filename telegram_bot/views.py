@@ -134,7 +134,11 @@ class TelegramCallbackView(View):
             return redirect("accounts:login")
 
         # Link or create user
-        tg_account, created = link_or_create_user(request, user_info)
+        try:
+            tg_account, created = link_or_create_user(request, user_info)
+        except TelegramOIDCError as e:
+            messages.error(request, str(e))
+            return redirect(reverse("accounts:login") + "?next=" + reverse("telegram_bot:login"))
 
         if created:
             # New user needs to complete registration (provide email)
