@@ -102,8 +102,8 @@ class TelegramClient:
 
 def build_start_keyboard(bot_username: str) -> dict:
     """Inline keyboard with 'Create or connect account' button opening the web login."""
-    # Use the actual web login page, not a deep link back to the bot
-    login_url = "https://expensure.onrender.com/accounts/telegram/login/"
+    # Use the actual web login page (mounted at /telegram/ in config/urls.py)
+    login_url = "https://expensure.onrender.com/telegram/login/"
     return {
         "inline_keyboard": [
             [{"text": "🔗 Create or connect account", "url": login_url}],
