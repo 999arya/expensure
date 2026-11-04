@@ -48,6 +48,9 @@ EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = True
 EMAIL_TIMEOUT = 10
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 7
+# Allow session cookie on cross-site redirect from Telegram OAuth
+SESSION_COOKIE_SAMESITE = "None"
+SESSION_COOKIE_SECURE = True
 LOGGING = {"version": 1, "disable_existing_loggers": False,
     "handlers": {"console": {"class": "logging.StreamHandler"}},
     "loggers": {"django.request": {"handlers": ["console"], "level": "ERROR", "propagate": False}}}
